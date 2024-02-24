@@ -1,6 +1,7 @@
 #include "DArray.h"
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
 	DArray a;
 	a.InsertAt(0, 2.1);
 	a.Print();
