@@ -1,22 +1,22 @@
 #include <cstdio>
 #include <cstdlib>
 
-int n; // the size of the array
-double *pData;  // the data of the array
+int n;		   // the size of the array
+double *pData; // the data of the array
 
-//double pData[100];
+// double pData[100];
 
-int SetArraySize( int size );
+int SetArraySize(int size);
 int FreeArray();
-int SetValue( int k, double value );
+int SetValue(int k, double value);
 int PrintArray();
 
 int main()
 {
-	SetArraySize( 3 );
-	SetValue( 0, 1.0 );
-	SetValue( 1, 2.0 );
-	SetValue( 2, 3.0 );
+	SetArraySize(3);
+	SetValue(0, 1.0);
+	SetValue(1, 2.0);
+	SetValue(2, 3.0);
 
 	PrintArray();
 
@@ -25,11 +25,11 @@ int main()
 	return 0;
 }
 
-int SetArraySize( int size )
+int SetArraySize(int size)
 {
 	n = size;
-	pData = (double*)malloc( size * sizeof(double) );
-	if( pData == NULL )
+	pData = (double *)malloc(size * sizeof(double));
+	if (pData == NULL)
 	{
 		printf("no enough memory!\n");
 		return 0;
@@ -40,39 +40,38 @@ int SetArraySize( int size )
 
 int FreeArray()
 {
-	if( pData != NULL )
+	if (pData != NULL)
 	{
-		free( pData );
+		free(pData);
 		pData = NULL;
 	}
 
 	return 1;
 }
 
-int SetValue( int k, double value )
+int SetValue(int k, double value)
 {
-	if( pData == NULL )
+	if (pData == NULL)
 		return 0;
 
-	if( k<0 || k>=n ) 
+	if (k < 0 || k >= n)
 		return 0;
 
-	pData[ k ] = value;
+	pData[k] = value;
 	return 1;
 }
 
-
-int	PrintArray()
+int PrintArray()
 {
-	if(n==0) 
+	if (n == 0)
 		return 0;
 
-	if( pData == NULL )
+	if (pData == NULL)
 		return 0;
 
-	for( int i=0; i<n; i++) 
+	for (int i = 0; i < n; i++)
 	{
-		printf("%lf \n", pData[i] );
+		printf("%lf \n", pData[i]);
 	}
 
 	return 1;

@@ -7,9 +7,8 @@
 
 using namespace std;
 
-#define TRUE	1
-#define FALSE	0
-
+#define TRUE 1
+#define FALSE 0
 
 // default constructor
 Array::Array()
@@ -37,7 +36,7 @@ Array::Array(int nSize, double dValue)
 }
 
 // initilize the array
-void	Array::Init()
+void Array::Init()
 {
 	m_nSize = 0;
 
@@ -53,14 +52,14 @@ Array::~Array()
 }
 
 // free the array
-void	Array::Free()
+void Array::Free()
 {
 	// no need to free anything, do nothing
 	// m_nSize=0;
 }
 
 // get the size of the array
-int		Array::GetSize()
+int Array::GetSize()
 {
 	assert(m_nSize <= ARRAY_MAX_ELEMENTS);
 
@@ -68,7 +67,7 @@ int		Array::GetSize()
 }
 
 // judge the validate of an index
-inline	int	Array::InvalidateIndex(int nIndex)
+inline int Array::InvalidateIndex(int nIndex)
 {
 	if (nIndex < 0 || nIndex > m_nSize)
 	{
@@ -81,7 +80,7 @@ inline	int	Array::InvalidateIndex(int nIndex)
 }
 
 // get an element at an index
-double	Array::GetAt(int nIndex)
+double Array::GetAt(int nIndex)
 {
 	if (InvalidateIndex(nIndex))
 	{
@@ -94,8 +93,8 @@ double	Array::GetAt(int nIndex)
 	}
 }
 
-// set the value of an element 
-int		Array::SetAt(int nIndex, double dValue)
+// set the value of an element
+int Array::SetAt(int nIndex, double dValue)
 {
 	if (InvalidateIndex(nIndex))
 	{
@@ -110,7 +109,7 @@ int		Array::SetAt(int nIndex, double dValue)
 }
 
 // add a new element at the end of the array
-int		Array::PushBack(double dValue)
+int Array::PushBack(double dValue)
 {
 	if (m_nSize == ARRAY_MAX_ELEMENTS)
 	{
@@ -127,7 +126,7 @@ int		Array::PushBack(double dValue)
 }
 
 // set the size of the array
-int		Array::SetSize(int nSize)
+int Array::SetSize(int nSize)
 {
 	if (nSize > ARRAY_MAX_ELEMENTS)
 	{
@@ -147,7 +146,7 @@ int		Array::SetSize(int nSize)
 }
 
 // delete an element at some index
-int		Array::DeleteAt(int nIndex)
+int Array::DeleteAt(int nIndex)
 {
 	if (InvalidateIndex(nIndex))
 	{
@@ -166,7 +165,7 @@ int		Array::DeleteAt(int nIndex)
 }
 
 // insert a new element at some index
-int		Array::InsertAt(int nIndex, double dValue)
+int Array::InsertAt(int nIndex, double dValue)
 {
 	if (InvalidateIndex(nIndex))
 	{
@@ -191,7 +190,7 @@ int		Array::InsertAt(int nIndex, double dValue)
 }
 
 // display the elements of the array
-void	Array::Display()
+void Array::Display()
 {
 	cout << " size= " << m_nSize << ":";
 	for (int i = 0; i < GetSize(); i++)
