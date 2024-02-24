@@ -1,69 +1,174 @@
 #include "PolynomialList.h"
 
-using namespace std;
+#include <cstdio>
+#include <cassert>
 
-PolynomialList::PolynomialList(const PolynomialList& other) {
-    // TODO
+const double EPS = 1e-6;
+
+PolynomialList::PolynomialList(const PolynomialList &other)
+{
+    m_Polynomial = other.m_Polynomial;
 }
 
-PolynomialList::PolynomialList(const string& file) {
-    // TODO
+PolynomialList::PolynomialList(const std::string &file)
+{
+    assert(ReadFromFile(file));
 }
 
-PolynomialList::PolynomialList(const double* cof, const int* deg, int n) {
-    // TODO
+PolynomialList::PolynomialList(const double *cof, const int *deg, int n)
+{
+    for (int i = 0; i < n; i++)
+    {
+        AddOneTerm(Term(deg[i], cof[i]));
+    }
 }
 
-PolynomialList::PolynomialList(const vector<int>& deg, const vector<double>& cof) {
-    // TODO
+PolynomialList::PolynomialList(const std::vector<int> &deg, const std::vector<double> &cof)
+{
+    assert(deg.size() == cof.size());
+    for (int i = 0; i < deg.size(); i++)
+    {
+        AddOneTerm(Term(deg.at(i), cof.at(i)));
+    }
 }
 
-double PolynomialList::coff(int i) const {
-    // TODO
+double PolynomialList::coff(int i) const
+{
+    for (std::list<Term>::const_iterator it = m_Polynomial.begin(); it != m_Polynomial.end(); it++)
+    {
+        if (it->deg == i)
+        {
+            return it->cof;
+        }
+    }
     return 0.; // you should return a correct value
 }
 
-double& PolynomialList::coff(int i) {
-    // TODO
-    static double ERROR; // you should delete this line
-    return ERROR; // you should return a correct value
+double &PolynomialList::coff(int i)
+{
+    return AddOneTerm(Term(i, 0)).cof; // you should return a correct value
+    // 重点！
 }
 
-void PolynomialList::compress() {
-    // TODO
+void PolynomialList::compress()
+{
+    std::list<Term>::iterator it = m_Polynomial.begin();
+    for (; it != m_Polynomial.end(); it++)
+    {
+        if (abs(it->cof) < EPS)
+        {
+            it = m_Polynomial.erase(it);
+            // 重点！erase返回下一个iterator，若不赋值会失效
+        }
+    }
+    return;
 }
 
-PolynomialList PolynomialList::operator+(const PolynomialList& right) const {
-    // TODO
-    return {}; // you should return a correct value
+PolynomialList PolynomialList::operator+(const PolynomialList &right) const
+{
+    PolynomialList Polynomial(*this);
+    std::list<Term>::const_iterator it = right.m_Polynomial.begin();
+    for (; it != right.m_Polynomial.end(); it++)
+    {
+        Polynomial.AddOneTerm(*it);
+    }
+    Polynomial.compress();
+    return Polynomial; // you should return a correct value
 }
 
-PolynomialList PolynomialList::operator-(const PolynomialList& right) const {
-    // TODO
-    return {}; // you should return a correct value
+PolynomialList PolynomialList::operator-(const PolynomialList &right) const
+{
+    PolynomialList Polynomial(*this);
+    std::list<Term>::const_iterator it = right.m_Polynomial.begin();
+    for (; it != right.m_Polynomial.end(); it++)
+    {
+        Polynomial.AddOneTerm(Term(it->deg, -it->cof));
+    }
+    Polynomial.compress();
+    return Polynomial; // you should return a correct value
 }
 
-PolynomialList PolynomialList::operator*(const PolynomialList& right) const {
-    // TODO
-    return {}; // you should return a correct value
+PolynomialList PolynomialList::operator*(const PolynomialList &right) const
+{
+    PolynomialList Polynomial;
+    for (std::list<Term>::const_iterator itl = m_Polynomial.begin(); itl != m_Polynomial.end(); itl++)
+    {
+        for (std::list<Term>::const_iterator itr = right.m_Polynomial.begin(); itr != right.m_Polynomial.end(); itr++)
+        {
+            Polynomial.AddOneTerm(Term(itl->deg + itr->deg, itl->cof * itr->cof));
+        }
+    }
+    Polynomial.compress();
+    return Polynomial; // you should return a correct value
 }
 
-PolynomialList& PolynomialList::operator=(const PolynomialList& right) {
-    // TODO
+PolynomialList &PolynomialList::operator=(const PolynomialList &right)
+{
+    m_Polynomial = right.m_Polynomial;
     return *this;
 }
 
-void PolynomialList::Print() const {
-    // TODO
+void PolynomialList::Print() const
+{
+    std::list<Term>::const_iterator it = m_Polynomial.begin();
+    for (; it != m_Polynomial.end(); it++)
+    {
+        if (it != m_Polynomial.begin() && it->cof > 0)
+        {
+            printf("+");
+        }
+        if (it->cof < 0)
+        {
+            printf("-");
+        }
+
+        printf("%.15g", fabs(it->cof));
+        if (it->deg != 0)
+        {
+            printf("x^%d", it->deg);
+        }
+    }
+    printf("\n");
+    return;
 }
 
-bool PolynomialList::ReadFromFile(const string& file) {
-    // TODO
-    return false; // you should return a correct value
+bool PolynomialList::ReadFromFile(const std::string &file)
+{
+    FILE *f = fopen(file.c_str(), "r");
+    if (f == NULL)
+    {
+        printf("Can't read file %s!\n", file.c_str());
+        return false;
+    }
+
+    char ch;
+    int n;
+    fscanf(f, "%c%d", &ch, &n);
+    for (int i = 0; i < n; i++)
+    {
+        int d;
+        double c;
+        fscanf(f, "%d %lf", &d, &c);
+        AddOneTerm(Term(d, c));
+    }
+    fclose(f);
+    return true; // you should return a correct value
 }
 
-PolynomialList::Term& PolynomialList::AddOneTerm(const Term& term) {
-    // TODO
-    static Term ERROR; // you should delete this line
-    return ERROR; // you should return a correct value
+PolynomialList::Term &PolynomialList::AddOneTerm(const Term &term)
+{
+    std::list<Term>::iterator it = m_Polynomial.begin();
+    for (; it != m_Polynomial.end(); it++)
+    {
+        if (it->deg == term.deg)
+        {
+            it->cof += term.cof;
+            return *it;
+        }
+        if (it->deg < term.deg)
+        {
+            break;
+        }
+    }
+    return *m_Polynomial.insert(it, term); // you should return a correct value
 }

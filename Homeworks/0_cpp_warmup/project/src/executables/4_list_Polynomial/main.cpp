@@ -5,7 +5,8 @@
 
 using namespace std;
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
 	PolynomialList p1("../data/P3.txt");
 	PolynomialList p2("../data/P4.txt");
 	PolynomialList p3;
