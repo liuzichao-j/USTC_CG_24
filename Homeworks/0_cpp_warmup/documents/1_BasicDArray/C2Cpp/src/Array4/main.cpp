@@ -7,16 +7,16 @@ int main()
 {
 	DArray pa;
 
-	//pa.InitArray( );
-	
-	pa.SetArraySize(  3 );
-	pa.SetValue(  0, 1.0 );
-	pa.SetValue(  1, 2.0 );
-	pa.SetValue( 2, 3.0 );
+	// pa.InitArray( );
 
-	pa.PrintArray( );
+	pa.SetArraySize(3);
+	pa.SetValue(0, 1.0);
+	pa.SetValue(1, 2.0);
+	pa.SetValue(2, 3.0);
 
-	//pa.FreeArray( );
+	pa.PrintArray();
+
+	// pa.FreeArray( );
 
 	return 0;
 }

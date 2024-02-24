@@ -3,50 +3,49 @@
 
 typedef struct
 {
-	int n; // the size of the array
-	double *pData;  // the data of the array
-}DArray;
+	int n;		   // the size of the array
+	double *pData; // the data of the array
+} DArray;
 
+// double pData[100];
 
-//double pData[100];
-
-int		InitArray( DArray *a );
-int		SetArraySize(DArray *a,  int size );
-int		FreeArray(DArray *a );
-int		SetValue( DArray *a, int k, double value );
-int		PrintArray(DArray *a );
+int InitArray(DArray *a);
+int SetArraySize(DArray *a, int size);
+int FreeArray(DArray *a);
+int SetValue(DArray *a, int k, double value);
+int PrintArray(DArray *a);
 
 int main()
 {
-	printf("set pa:\n" );
+	printf("set pa:\n");
 	DArray pa;
 
-	InitArray( &pa );
-	
-	SetArraySize( &pa, 3 );
-	SetValue( &pa, 0, 1.0 );
-	SetValue( &pa, 1, 2.0 );
-	SetValue( &pa, 2, 3.0 );
+	InitArray(&pa);
+
+	SetArraySize(&pa, 3);
+	SetValue(&pa, 0, 1.0);
+	SetValue(&pa, 1, 2.0);
+	SetValue(&pa, 2, 3.0);
 
 	PrintArray(&pa);
 
 	FreeArray(&pa);
 
-	return 0;
-
-	printf("set pb:\n" );
+	printf("set pb:\n");
 	DArray pb;
-	InitArray( &pb );
-	SetArraySize( &pb, 4 );
-	SetValue( &pb, 0, 1.0 );
-	SetValue( &pb, 1, 2.0 );
-	SetValue( &pb, 2, 3.0 );
-	SetValue( &pb, 3, 4.0 );
+	InitArray(&pb);
+	SetArraySize(&pb, 4);
+	SetValue(&pb, 0, 1.0);
+	SetValue(&pb, 1, 2.0);
+	SetValue(&pb, 2, 3.0);
+	SetValue(&pb, 3, 4.0);
 	PrintArray(&pb);
 	FreeArray(&pb);
+
+	return 0;
 }
 
-int		InitArray( DArray *a )
+int InitArray(DArray *a)
 {
 	a->n = 0;
 	a->pData = NULL;
@@ -54,11 +53,14 @@ int		InitArray( DArray *a )
 	return 1;
 }
 
-int		SetArraySize( DArray *a, int size )
+int SetArraySize(DArray *a, int size)
 {
+	if (a->pData != NULL)
+		FreeArray(a);
+
 	a->n = size;
-	a->pData = (double*)malloc( size * sizeof(double) );
-	if( a->pData == NULL )
+	a->pData = (double *)malloc(size * sizeof(double));
+	if (a->pData == NULL)
 	{
 		printf("no enough memory!\n");
 		return 0;
@@ -67,41 +69,40 @@ int		SetArraySize( DArray *a, int size )
 	return 1;
 }
 
-int		FreeArray(DArray *a)
+int FreeArray(DArray *a)
 {
-	if( a->pData != NULL )
+	if (a->pData != NULL)
 	{
-		free( a->pData );
+		free(a->pData);
 		a->pData = NULL;
 	}
 
 	return 1;
 }
 
-int		SetValue( DArray *a, int k, double value )
+int SetValue(DArray *a, int k, double value)
 {
-	if( a->pData == NULL )
+	if (a->pData == NULL)
 		return 0;
 
-	if( k<0 || k>=a->n ) 
+	if (k < 0 || k >= a->n)
 		return 0;
 
-	a->pData[ k ] = value;
+	a->pData[k] = value;
 	return 1;
 }
 
-
-int	PrintArray(DArray *a)
+int PrintArray(DArray *a)
 {
-	if(a->n==0) 
+	if (a->n == 0)
 		return 0;
 
-	if( a->pData == NULL )
+	if (a->pData == NULL)
 		return 0;
 
-	for( int i=0; i<a->n; i++) 
+	for (int i = 0; i < a->n; i++)
 	{
-		printf("%lf \n", a->pData[i] );
+		printf("%lf \n", a->pData[i]);
 	}
 
 	return 1;

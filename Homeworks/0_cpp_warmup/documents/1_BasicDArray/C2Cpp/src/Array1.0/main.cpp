@@ -44,9 +44,8 @@ int InitArray(DArray &a)
 int SetArraySize(DArray &a, int size)
 {
 	if (a.pData != NULL)
-	{
 		FreeArray(a);
-	}
+
 	a.n = size;
 	a.pData = (double *)malloc(size * sizeof(double));
 	if (a.pData == NULL)
