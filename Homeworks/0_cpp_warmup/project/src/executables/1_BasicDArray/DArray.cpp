@@ -43,10 +43,15 @@ DArray::~DArray()
 // display the elements of the array
 void DArray::Print() const
 {
+	if (m_nSize == 0)
+	{
+		printf("Nothing in this array. \n");
+	}
 	for (int i = 0; i < m_nSize; i++)
 	{
 		printf("%lf\n", m_pData[i]);
 	}
+	printf("\n");
 	return;
 }
 
@@ -81,17 +86,24 @@ int DArray::GetSize() const
 // set the size of the array
 void DArray::SetSize(int nSize)
 {
-	m_nSize = nSize;
-	m_pData = (double *)malloc(nSize * sizeof(double));
-	if (m_pData == NULL)
+	double *m_pDataNew = (double *)malloc(nSize * sizeof(double));
+	if (m_pDataNew == NULL)
 	{
-		printf("Out of Memory!\n");
+		printf("Out of Memory! \n");
 		exit(0);
 	}
-	for (int i = 0; i < nSize; i++)
+	int nCopyNum = nSize > m_nSize ? m_nSize : nSize;
+	for (int i = 0; i < nCopyNum; i++)
 	{
-		m_pData[i] = 0.0f;
+		m_pDataNew[i] = m_pData[i];
 	}
+	for (int i = nCopyNum; i < nSize; i++)
+	{
+		m_pDataNew[i] = 0.0f;
+	}
+	m_nSize = nSize;
+	free(m_pData);
+	m_pData = m_pDataNew;
 	return;
 }
 
@@ -100,7 +112,7 @@ const double &DArray::GetAt(int nIndex) const
 {
 	if (nIndex < 0 || nIndex >= m_nSize)
 	{
-		printf("Invalid Index at GetAt()!\n");
+		printf("Invalid Index at GetAt()! \n");
 		return 0;
 	}
 	return m_pData[nIndex]; // you should return a correct value
@@ -111,7 +123,7 @@ void DArray::SetAt(int nIndex, double dValue)
 {
 	if (nIndex < 0 || nIndex >= m_nSize)
 	{
-		printf("Invalid Index at SetAt()!\n");
+		printf("Invalid Index at SetAt()! \n");
 	}
 	else
 	{
@@ -136,8 +148,15 @@ void DArray::PushBack(double dValue)
 	double *m_pDataNew = (double *)malloc((m_nSize + 1) * sizeof(double));
 	if (m_pDataNew == NULL)
 	{
-		printf("Out of Memory!\n");
+		printf("Out of Memory! \n");
 		exit(0);
+	}
+	else
+	{
+		for (int i = 0; i < m_nSize + 1; i++)
+		{
+			m_pDataNew[i] = 0.0f;
+		}
 	}
 
 	for (int i = 0; i < m_nSize; i++)
@@ -145,7 +164,7 @@ void DArray::PushBack(double dValue)
 		m_pDataNew[i] = m_pData[i];
 	}
 
-	m_pDataNew[++m_nSize] = dValue;
+	m_pDataNew[m_nSize++] = dValue;
 	free(m_pData);
 	m_pData = m_pDataNew;
 
@@ -157,7 +176,7 @@ void DArray::DeleteAt(int nIndex)
 {
 	if (nIndex < 0 || nIndex > m_nSize)
 	{
-		printf("Invalid Index at DeleteAt()!\n");
+		printf("Invalid Index at DeleteAt()! \n");
 		return;
 	}
 	for (int i = nIndex; i < m_nSize - 1; i++)
@@ -174,7 +193,7 @@ void DArray::InsertAt(int nIndex, double dValue)
 	double *m_pDataNew = (double *)malloc((m_nSize + 1) * sizeof(double));
 	if (m_pDataNew == NULL)
 	{
-		printf("Out of Memory!\n");
+		printf("Out of Memory! \n");
 		exit(0);
 	}
 
@@ -188,7 +207,7 @@ void DArray::InsertAt(int nIndex, double dValue)
 		m_pDataNew[i] = m_pData[i - 1];
 	}
 
-	m_pDataNew[++m_nSize] = dValue;
+	m_nSize++;
 	free(m_pData);
 	m_pData = m_pDataNew;
 
