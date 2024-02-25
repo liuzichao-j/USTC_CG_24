@@ -16,9 +16,9 @@ DArray::DArray()
 
 // set an array with default values
 DArray::DArray(int nSize, double dValue)
+	: m_pData(new double[nSize]),m_nSize(nSize)
+// 重点！善用便捷的构造函数形式和new函数代替malloc
 {
-	Init();
-	SetSize(nSize);
 	for (int i = 0; i < nSize; i++)
 	{
 		m_pData[i] = dValue;
@@ -26,12 +26,12 @@ DArray::DArray(int nSize, double dValue)
 }
 
 DArray::DArray(const DArray &arr)
+	: m_pData(new double[arr.m_nSize]), m_nSize(arr.m_nSize)
 {
-	Init();
-	SetSize(arr.GetSize());
 	for (int i = 0; i < m_nSize; i++)
 	{
 		m_pData[i] = arr.GetAt(i);
+		// 使用外接接口函数，但是也可以直接访问arr.m_pData[i]
 	}
 }
 
@@ -50,7 +50,7 @@ void DArray::Print() const
 	}
 	for (int i = 0; i < m_nSize; i++)
 	{
-		printf("%lf\n", m_pData[i]);
+		printf("%.15g\n", m_pData[i]); // 仅输出有效位数
 	}
 	printf("\n");
 	return;
@@ -60,7 +60,7 @@ void DArray::Print() const
 void DArray::Init()
 {
 	m_nSize = 0;
-	m_pData = NULL;
+	m_pData = NULL; // 或nullptr
 	return;
 }
 
@@ -72,6 +72,8 @@ void DArray::Free()
 		free(m_pData);
 		m_pData = NULL;
 	}
+	// 上述语句可以直接用free，因为free(NULL)无任何行为或报错
+	// 可以使用便捷的delete[] m_pData;
 	m_nSize = 0;
 	return;
 }
@@ -86,6 +88,7 @@ int DArray::GetSize() const
 void DArray::SetSize(int nSize)
 {
 	double *pDataNew = (double *)malloc(nSize * sizeof(double));
+	// 可改作 = new double[nSize]，可以对nSize==m_nSize特判
 	if (pDataNew == NULL)
 	{
 		printf("Out of Memory! \n");
@@ -111,14 +114,14 @@ void DArray::SetSize(int nSize)
 // get an element at an index
 const double &DArray::GetAt(int nIndex) const
 {
-	assert(nIndex >= 0 || nIndex < m_nSize);
+	assert(nIndex >= 0 && nIndex < m_nSize);
 	return m_pData[nIndex]; // you should return a correct value
 }
 
 // set the value of an element
 void DArray::SetAt(int nIndex, double dValue)
 {
-	assert(nIndex >= 0 || nIndex < m_nSize);
+	assert(nIndex >= 0 && nIndex < m_nSize);
 	m_pData[nIndex] = dValue;
 	return;
 }
@@ -126,7 +129,7 @@ void DArray::SetAt(int nIndex, double dValue)
 // overload operator '[]'
 const double &DArray::operator[](int nIndex) const
 {
-	assert(nIndex >= 0 || nIndex < m_nSize);
+	assert(nIndex >= 0 && nIndex < m_nSize);
 	return m_pData[nIndex]; // you should return a correct value
 }
 
@@ -155,7 +158,7 @@ void DArray::PushBack(double dValue)
 // delete an element at some index
 void DArray::DeleteAt(int nIndex)
 {
-	assert(nIndex >= 0 || nIndex < m_nSize);
+	assert(nIndex >= 0 && nIndex < m_nSize);
 	for (int i = nIndex; i < m_nSize - 1; i++)
 	{
 		m_pData[i] = m_pData[i + 1];
@@ -167,7 +170,9 @@ void DArray::DeleteAt(int nIndex)
 // insert a new element at some index
 void DArray::InsertAt(int nIndex, double dValue)
 {
+	assert(nIndex >= 0 && nIndex <= m_nSize);
 	double *pDataNew = (double *)malloc((m_nSize + 1) * sizeof(double));
+	// new double[static_cast<size_t>(m_nSize) + 1]，使用强制类型转换为size_t（一般为unsigned int）
 	if (pDataNew == NULL)
 	{
 		printf("Out of Memory! \n");
@@ -187,7 +192,6 @@ void DArray::InsertAt(int nIndex, double dValue)
 	m_nSize++;
 	free(m_pData);
 	m_pData = pDataNew;
-
 	return;
 }
 

@@ -14,7 +14,7 @@ PolynomialMap::PolynomialMap(const PolynomialMap &other)
 
 PolynomialMap::PolynomialMap(const std::string &file)
 {
-	ReadFromFile(file);
+	assert(ReadFromFile(file));
 }
 
 PolynomialMap::PolynomialMap(const double *cof, const int *deg, int n)
@@ -29,8 +29,10 @@ PolynomialMap::PolynomialMap(const std::vector<int> &deg, const std::vector<doub
 {
 	assert(deg.size() == cof.size());
 	for (int i = 0; i < deg.size(); i++)
+	// .size()返回size_t（unsigned int或unsigned long int），可以使用auto解决
 	{
 		m_Polynomial[deg[i]] = cof[i];
+		// 可写为coff(deg[i])=cof[i]，因为自动判断为左值，使用了double &的函数
 	}
 }
 
@@ -66,12 +68,13 @@ void PolynomialMap::compress()
 
 PolynomialMap PolynomialMap::operator+(const PolynomialMap &right) const
 {
-	PolynomialMap Polynomial;
-	Polynomial.m_Polynomial = right.m_Polynomial;
+	PolynomialMap Polynomial(right);
+	// 构造函数
 	for (std::map<int, double>::const_iterator it = m_Polynomial.begin(); it != m_Polynomial.end(); it++)
 	{
 		Polynomial.m_Polynomial[it->first] += it->second;
 	}
+	Polynomial.compress();
 	return Polynomial; // you should return a correct value
 }
 
@@ -83,6 +86,7 @@ PolynomialMap PolynomialMap::operator-(const PolynomialMap &right) const
 	{
 		Polynomial.m_Polynomial[it->first] -= it->second;
 	}
+	Polynomial.compress();
 	return Polynomial; // you should return a correct value
 }
 
@@ -91,11 +95,12 @@ PolynomialMap PolynomialMap::operator*(const PolynomialMap &right) const
 	PolynomialMap Polynomial;
 	for (std::map<int, double>::const_iterator itl = m_Polynomial.begin(); itl != m_Polynomial.end(); itl++)
 	{
-		for (std::map<int, double>::const_iterator itr = m_Polynomial.begin(); itr != m_Polynomial.end(); itr++)
+		for (std::map<int, double>::const_iterator itr = right.m_Polynomial.begin(); itr != right.m_Polynomial.end(); itr++)
 		{
 			Polynomial.m_Polynomial[itl->first + itr->first] += itl->second * itr->second;
 		}
 	}
+	Polynomial.compress();
 	return Polynomial; // you should return a correct value
 }
 
@@ -122,7 +127,7 @@ void PolynomialMap::Print() const
 		{
 			printf("-");
 		}
-		printf("%.15g", it->second);
+		printf("%.15g", fabs(it->second));
 		if (it->first > 0)
 		{
 			printf("x^%d", it->first);

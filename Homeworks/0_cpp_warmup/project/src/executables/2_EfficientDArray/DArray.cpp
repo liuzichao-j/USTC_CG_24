@@ -50,7 +50,7 @@ void DArray::Print() const
 	}
 	for (int i = 0; i < m_nSize; i++)
 	{
-		printf("%lf\n", m_pData[i]);
+		printf("%.15g\n", m_pData[i]);
 	}
 	printf("\n");
 	return;
@@ -88,6 +88,8 @@ void DArray::Reserve(int nSize)
 	}
 	m_nMax = nMax;
 
+	// 另解：倍增m_nMax即可，但缩小后不会恢复
+
 	double *pDataNew = (double *)malloc(nMax * sizeof(double));
 	if (pDataNew == NULL)
 	{
@@ -103,6 +105,7 @@ void DArray::Reserve(int nSize)
 	{
 		pDataNew[i] = 0.0f;
 	}
+	// memcpy(pData, m_pData, m_nSize * sizeof(double));
 
 	free(m_pData);
 	m_pData = pDataNew;
@@ -122,7 +125,7 @@ void DArray::SetSize(int nSize)
 	{
 		Reserve(nSize);
 	}
-
+	// 可以均Reverse
 	m_nSize = nSize;
 	return;
 }
@@ -130,14 +133,14 @@ void DArray::SetSize(int nSize)
 // get an element at an index
 const double &DArray::GetAt(int nIndex) const
 {
-	assert(nIndex >= 0 || nIndex < m_nSize);
+	assert(nIndex >= 0 && nIndex < m_nSize);
 	return m_pData[nIndex]; // you should return a correct value
 }
 
 // set the value of an element
 void DArray::SetAt(int nIndex, double dValue)
 {
-	assert(nIndex >= 0 || nIndex < m_nSize);
+	assert(nIndex >= 0 && nIndex < m_nSize);
 	m_pData[nIndex] = dValue;
 	return;
 }
@@ -145,14 +148,14 @@ void DArray::SetAt(int nIndex, double dValue)
 // overload operator '[]'
 double &DArray::operator[](int nIndex)
 {
-	assert(nIndex >= 0 || nIndex < m_nSize);
+	assert(nIndex >= 0 && nIndex < m_nSize);
 	return m_pData[nIndex]; // you should return a correct value
 }
 
 // overload operator '[]'
 const double &DArray::operator[](int nIndex) const
 {
-	assert(nIndex >= 0 || nIndex < m_nSize);
+	assert(nIndex >= 0 && nIndex < m_nSize);
 	return m_pData[nIndex]; // you should return a correct value
 }
 
@@ -167,7 +170,7 @@ void DArray::PushBack(double dValue)
 // delete an element at some index
 void DArray::DeleteAt(int nIndex)
 {
-	assert(nIndex >= 0 || nIndex < m_nSize);
+	assert(nIndex >= 0 && nIndex < m_nSize);
 	for (int i = nIndex; i < m_nSize - 1; i++)
 	{
 		m_pData[i] = m_pData[i + 1];
@@ -179,7 +182,7 @@ void DArray::DeleteAt(int nIndex)
 // insert a new element at some index
 void DArray::InsertAt(int nIndex, double dValue)
 {
-	assert(nIndex >= 0 || nIndex < m_nSize);
+	assert(nIndex >= 0 && nIndex <= m_nSize);
 	SetSize(m_nSize + 1);
 	for (int i = m_nSize - 1; i > nIndex; i--)
 	{

@@ -13,7 +13,8 @@ class DArray
 {
 public:
 	DArray();								// default constructor
-	DArray(int nSize, Datatype dValue = 0); // set an array with default values
+	DArray(int nSize, const Datatype &dValue = static_cast<Datatype>(0)); // set an array with default values
+	// 重点！更严谨的构造函数
 	DArray(const DArray<Datatype> &arr);	// copy constructor
 	~DArray();								// deconstructor
 
@@ -23,14 +24,15 @@ public:
 	void SetSize(int nSize); // set the size of the array
 
 	const Datatype &GetAt(int nIndex) const; // get an element at an index
-	void SetAt(int nIndex, Datatype dValue); // set the value of an element
+	void SetAt(int nIndex, const Datatype &dValue); // set the value of an element
 
 	Datatype &operator[](int nIndex);			  // overload operator '[]'
 	const Datatype &operator[](int nIndex) const; // overload operator '[]'
 
-	void PushBack(Datatype dValue);				// add a new element at the end of the array
+	void PushBack(const Datatype &dValue);				// add a new element at the end of the array
 	void DeleteAt(int nIndex);					// delete an element at some index
-	void InsertAt(int nIndex, Datatype dValue); // insert a new element at some index
+	void InsertAt(int nIndex, const Datatype &dValue); // insert a new element at some index
+// 根据实际情况积极使用const &来传入参数
 
 	DArray<Datatype> &operator=(const DArray<Datatype> &arr); // overload operator '='
 
@@ -54,7 +56,7 @@ DArray<Datatype>::DArray()
 
 // set an array with default values
 template <class Datatype>
-DArray<Datatype>::DArray(int nSize, Datatype dValue)
+DArray<Datatype>::DArray(int nSize, const Datatype &dValue)
 {
 	Init();
 	SetSize(nSize);
@@ -103,13 +105,14 @@ void DArray<Datatype>::Print() const
 		}
 		if (!strcmp(typen, "float"))
 		{
-			printf("%f\n", (float)m_pData[i]);
+			printf("%.15g\n", (float)m_pData[i]);
 		}
 		if (!strcmp(typen, "double"))
 		{
-			printf("%lf\n", (double)m_pData[i]);
+			printf("%.15g\n", (double)m_pData[i]);
 		}
 	}
+	// 使用cout无需进行类型判断
 	printf("\n");
 	return;
 }
@@ -200,7 +203,7 @@ const Datatype &DArray<Datatype>::GetAt(int nIndex) const
 
 // set the value of an element
 template <class Datatype>
-void DArray<Datatype>::SetAt(int nIndex, Datatype dValue)
+void DArray<Datatype>::SetAt(int nIndex, const Datatype &dValue)
 {
 	assert(nIndex >= 0 || nIndex < m_nSize);
 	m_pData[nIndex] = dValue;
@@ -225,7 +228,7 @@ const Datatype &DArray<Datatype>::operator[](int nIndex) const
 
 // add a new element at the end of the array
 template <class Datatype>
-void DArray<Datatype>::PushBack(Datatype dValue)
+void DArray<Datatype>::PushBack(const Datatype &dValue)
 {
 	SetSize(m_nSize + 1);
 	m_pData[m_nSize - 1] = dValue;
@@ -247,7 +250,7 @@ void DArray<Datatype>::DeleteAt(int nIndex)
 
 // insert a new element at some index
 template <class Datatype>
-void DArray<Datatype>::InsertAt(int nIndex, Datatype dValue)
+void DArray<Datatype>::InsertAt(int nIndex, const Datatype &dValue)
 {
 	assert(nIndex >= 0 || nIndex < m_nSize);
 	SetSize(m_nSize + 1);

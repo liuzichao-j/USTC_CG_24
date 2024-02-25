@@ -4,6 +4,7 @@
 #include <cassert>
 
 const double EPS = 1e-6;
+// 重点！double的eps 可以设置为1.0e-10
 
 PolynomialList::PolynomialList(const PolynomialList &other)
 {
@@ -41,24 +42,30 @@ double PolynomialList::coff(int i) const
             return it->cof;
         }
     }
+
+    // C++11：基于范围的for循环，for(const Term &term : m_Polynomial)
     return 0.; // you should return a correct value
 }
 
 double &PolynomialList::coff(int i)
 {
     return AddOneTerm(Term(i, 0)).cof; // you should return a correct value
-    // 重点！
+    // 重点！应返回对应元素而非副本（由&自动保证）
 }
 
 void PolynomialList::compress()
 {
     std::list<Term>::iterator it = m_Polynomial.begin();
-    for (; it != m_Polynomial.end(); it++)
+    for (; it != m_Polynomial.end();)
     {
-        if (abs(it->cof) < EPS)
+        if (fabs(it->cof) < EPS)
         {
             it = m_Polynomial.erase(it);
-            // 重点！erase返回下一个iterator，若不赋值会失效
+            // 重点！erase返回下一个iterator，若不赋值会失效，此时也无需++
+        }
+        else
+        {
+            it++;
         }
     }
     return;
@@ -67,8 +74,7 @@ void PolynomialList::compress()
 PolynomialList PolynomialList::operator+(const PolynomialList &right) const
 {
     PolynomialList Polynomial(*this);
-    std::list<Term>::const_iterator it = right.m_Polynomial.begin();
-    for (; it != right.m_Polynomial.end(); it++)
+    for (std::list<Term>::const_iterator it = right.m_Polynomial.begin(); it != right.m_Polynomial.end(); it++)
     {
         Polynomial.AddOneTerm(*it);
     }
@@ -79,8 +85,7 @@ PolynomialList PolynomialList::operator+(const PolynomialList &right) const
 PolynomialList PolynomialList::operator-(const PolynomialList &right) const
 {
     PolynomialList Polynomial(*this);
-    std::list<Term>::const_iterator it = right.m_Polynomial.begin();
-    for (; it != right.m_Polynomial.end(); it++)
+    for (std::list<Term>::const_iterator it = right.m_Polynomial.begin(); it != right.m_Polynomial.end(); it++)
     {
         Polynomial.AddOneTerm(Term(it->deg, -it->cof));
     }
@@ -169,7 +174,7 @@ PolynomialList::Term &PolynomialList::AddOneTerm(const Term &term)
             it->cof += term.cof;
             return *it;
         }
-        if (it->deg < term.deg)
+        if (it->deg > term.deg) // 从小次数到大次数，与map的int型默认顺序相合
         {
             break;
         }
