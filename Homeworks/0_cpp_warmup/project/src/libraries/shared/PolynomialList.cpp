@@ -111,6 +111,10 @@ PolynomialList &PolynomialList::operator=(const PolynomialList &right)
 void PolynomialList::Print() const
 {
     std::list<Term>::const_iterator it = m_Polynomial.begin();
+    if (it == m_Polynomial.end())
+    {
+        printf("0");
+    }
     for (; it != m_Polynomial.end(); it++)
     {
         if (it != m_Polynomial.begin() && it->cof > 0)
@@ -128,7 +132,7 @@ void PolynomialList::Print() const
             printf("x^%d", it->deg);
         }
     }
-    printf("\n");
+    printf("\n\n");
     return;
 }
 

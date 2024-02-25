@@ -8,9 +8,12 @@
 
 using namespace std;
 
-void generateTestCase(int size, vector<int>& deg, vector<double>& cof) {
-    deg.clear(); cof.clear();
-    for (int i = 0; i < size; i++) {
+void generateTestCase(int size, vector<int> &deg, vector<double> &cof)
+{
+    deg.clear();
+    cof.clear();
+    for (int i = 0; i < size; i++)
+    {
         int c = rand() % 10000;
         double val = (double)(rand() % 100);
         deg.push_back(c);
@@ -18,7 +21,8 @@ void generateTestCase(int size, vector<int>& deg, vector<double>& cof) {
     }
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
     srand(unsigned(time(0)));
     TestPolynomial<PolynomialList> testList;
     TestPolynomial<PolynomialMap> testMap;
