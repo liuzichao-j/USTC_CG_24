@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "view/cmpt_canvas.h"
-#include "view/cmpt_image.h"
+#include "view/comp_canvas.h"
+#include "view/comp_image.h"
 #include "view/window.h"
 
 namespace USTC_CG
@@ -21,11 +21,11 @@ class Demo : public Window
     void draw_canvas();
 
    private:
-    std::shared_ptr<Canvas> p_canvas = nullptr;
-    std::shared_ptr<Image> p_image = nullptr;
+    std::shared_ptr<Canvas> p_canvas_ = nullptr;
+    std::shared_ptr<Image> p_image_ = nullptr;
 
-    bool flag_show_main_view = true;
-    bool flag_open_file_dialog = false;
-    bool flag_enable_canvas = false;
+    bool flag_show_main_view_ = true;
+    bool flag_open_file_dialog_ = false;
+    bool flag_enable_canvas_ = false;
 };
 }  // namespace USTC_CG
