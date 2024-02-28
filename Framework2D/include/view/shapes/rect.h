@@ -28,10 +28,11 @@ class Rect : public Shape
     // Overrides draw function to implement rectangle-specific drawing logic
     void draw(const Config& config) const override;
 
-    // Overrides Shape's update function to adjust the rectangle size during interaction
+    // Overrides Shape's update function to adjust the rectangle size during
+    // interaction
     void update(float x, float y) override;
 
-    void addpoint(float x,float y) override
+    void addpoint(float x, float y) override
     {
     }
 

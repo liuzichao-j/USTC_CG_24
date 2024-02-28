@@ -19,11 +19,11 @@ void Polygon::draw(const Config& config) const
                 config.bias[0] + points_x_.at(i + 1),
                 config.bias[1] + points_y_.at(i + 1)),
             IM_COL32(
-                config.line_color[0],
-                config.line_color[1],
-                config.line_color[2],
-                config.line_color[3]),
-            config.line_thickness);
+                conf.line_color[0],
+                conf.line_color[1],
+                conf.line_color[2],
+                conf.line_color[3]),
+            conf.line_thickness);
     }
     draw_list->AddLine(
         ImVec2(
@@ -31,21 +31,21 @@ void Polygon::draw(const Config& config) const
             config.bias[1] + points_y_.at(points_x_.size() - 1)),
         ImVec2(config.bias[0] + end_point_x_, config.bias[1] + end_point_y_),
         IM_COL32(
-            config.line_color[0],
-            config.line_color[1],
-            config.line_color[2],
-            config.line_color[3]),
-        config.line_thickness);
+            conf.line_color[0],
+            conf.line_color[1],
+            conf.line_color[2],
+            conf.line_color[3]),
+        conf.line_thickness);
     draw_list->AddLine(
         ImVec2(config.bias[0] + end_point_x_, config.bias[1] + end_point_y_),
         ImVec2(
             config.bias[0] + points_x_.at(0), config.bias[1] + points_y_.at(0)),
         IM_COL32(
-            config.line_color[0],
-            config.line_color[1],
-            config.line_color[2],
-            config.line_color[3]),
-        0.75f * config.line_thickness);
+            conf.line_color[0],
+            conf.line_color[1],
+            conf.line_color[2],
+            conf.line_color[3]),
+        0.5f * conf.line_thickness);
 }
 
 void Polygon::update(float x, float y)

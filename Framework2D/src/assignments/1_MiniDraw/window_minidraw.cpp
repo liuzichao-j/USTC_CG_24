@@ -85,7 +85,8 @@ void MiniDraw::draw_canvas()
         ImGui::Text("Press Shift to draw circle in Ellipse mode. ");
 
         ImGui::ColorEdit4("Choose Paint Color", p_canvas_->draw_color);
-        ImGui::SliderFloat("float", &p_canvas_->draw_thickness, 0.0f, 10.0f);
+        ImGui::SliderFloat(
+            "Choose Paint Thickness", &p_canvas_->draw_thickness, 0.0f, 10.0f);
 
         // Set the canvas to fill the rest of the window
         const auto& canvas_min = ImGui::GetCursorScreenPos();

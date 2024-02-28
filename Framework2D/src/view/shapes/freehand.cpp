@@ -19,11 +19,11 @@ void Freehand::draw(const Config& config) const
                 config.bias[0] + points_x_.at(i + 1),
                 config.bias[1] + points_y_.at(i + 1)),
             IM_COL32(
-                config.line_color[0],
-                config.line_color[1],
-                config.line_color[2],
-                config.line_color[3]),
-            config.line_thickness);
+                conf.line_color[0],
+                conf.line_color[1],
+                conf.line_color[2],
+                conf.line_color[3]),
+            conf.line_thickness);
     }
 }
 

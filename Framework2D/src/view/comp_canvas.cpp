@@ -118,12 +118,7 @@ void Canvas::draw_background()
 
 void Canvas::draw_shapes()
 {
-    Shape::Config s = { .bias = { canvas_min_.x, canvas_min_.y },
-                        .line_thickness = draw_thickness };
-    for (int i = 0; i < 4; i++)
-    {
-        s.line_color[i] = (unsigned char)(draw_color[i]*255);
-    }
+    Shape::Config s = { .bias = { canvas_min_.x, canvas_min_.y } };
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
     // ClipRect can hide the drawing content outside of the rectangular area
@@ -182,7 +177,6 @@ void Canvas::mouse_click_event()
                     std::make_shared<Freehand>(start_point_.x, start_point_.y);
                 break;
             }
-
             default: break;
         }
     }
@@ -213,6 +207,8 @@ void Canvas::mouse_right_click_event()
         draw_status_ = false;
         if (current_shape_ && shape_type_ == kPolygon)
         {
+            current_shape_->addpoint(end_point_.x, end_point_.y);
+            current_shape_->addpoint(start_point_.x, start_point_.y);
             shape_list_.push_back(current_shape_);
             current_shape_.reset();
         }
@@ -227,6 +223,12 @@ void Canvas::mouse_move_event()
         end_point_ = mouse_pos_in_canvas();
         if (current_shape_)
         {
+            for (int i = 0; i < 4; i++)
+            {
+                current_shape_->conf.line_color[i] =
+                    (unsigned char)(draw_color[i] * 255);
+            }
+            current_shape_->conf.line_thickness = draw_thickness;
             current_shape_->update(end_point_.x, end_point_.y);
         }
     }
