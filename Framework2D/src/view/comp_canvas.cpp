@@ -4,7 +4,10 @@
 #include <iostream>
 
 #include "imgui.h"
+#include "view/shapes/ellipse.h"
+#include "view/shapes/freehand.h"
 #include "view/shapes/line.h"
+#include "view/shapes/polygon.h"
 #include "view/shapes/rect.h"
 
 namespace USTC_CG
@@ -15,6 +18,8 @@ void Canvas::draw()
 
     if (is_hovered_ && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         mouse_click_event();
+    if (is_hovered_ && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+        mouse_right_click_event();
     mouse_move_event();
     if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
         mouse_release_event();
@@ -72,6 +77,21 @@ void Canvas::set_freehand()
     shape_type_ = kFreehand;
 }
 
+void Canvas::set_undo()
+{
+    if (!draw_status_ && !shape_list_.empty())
+    {
+        shape_list_.pop_back();
+    }
+    draw_status_ = false;
+}
+
+void Canvas::set_reset()
+{
+    draw_status_ = false;
+    shape_list_.clear();
+}
+
 void Canvas::clear_shape_list()
 {
     shape_list_.clear();
@@ -98,7 +118,12 @@ void Canvas::draw_background()
 
 void Canvas::draw_shapes()
 {
-    Shape::Config s = { .bias = { canvas_min_.x, canvas_min_.y } };
+    Shape::Config s = { .bias = { canvas_min_.x, canvas_min_.y },
+                        .line_thickness = draw_thickness };
+    for (int i = 0; i < 4; i++)
+    {
+        s.line_color[i] = (unsigned char)(draw_color[i]*255);
+    }
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
     // ClipRect can hide the drawing content outside of the rectangular area
@@ -139,14 +164,54 @@ void Canvas::mouse_click_event()
                     start_point_.x, start_point_.y, end_point_.x, end_point_.y);
                 break;
             }
+            case USTC_CG::Canvas::kEllipse:
+            {
+                current_shape_ = std::make_shared<Ellipse>(
+                    start_point_.x, start_point_.y, end_point_.x, end_point_.y);
+                break;
+            }
+            case USTC_CG::Canvas::kPolygon:
+            {
+                current_shape_ = std::make_shared<Polygon>(
+                    start_point_.x, start_point_.y, end_point_.x, end_point_.y);
+                break;
+            }
+            case USTC_CG::Canvas::kFreehand:
+            {
+                current_shape_ =
+                    std::make_shared<Freehand>(start_point_.x, start_point_.y);
+                break;
+            }
 
             default: break;
         }
     }
     else
     {
+        if (shape_type_ == kPolygon)
+        {
+            end_point_ = mouse_pos_in_canvas();
+            current_shape_->addpoint(end_point_.x, end_point_.y);
+        }
+        else
+        {
+            draw_status_ = false;
+            if (current_shape_ && shape_type_ != kFreehand)
+            {
+                shape_list_.push_back(current_shape_);
+                current_shape_.reset();
+            }
+        }
+    }
+}
+
+void Canvas::mouse_right_click_event()
+{
+    // HW1_TODO: Drawing rule for more primitives
+    if (draw_status_)
+    {
         draw_status_ = false;
-        if (current_shape_)
+        if (current_shape_ && shape_type_ == kPolygon)
         {
             shape_list_.push_back(current_shape_);
             current_shape_.reset();
@@ -170,6 +235,12 @@ void Canvas::mouse_move_event()
 void Canvas::mouse_release_event()
 {
     // HW1_TODO: Drawing rule for more primitives
+    if (draw_status_ && current_shape_ && shape_type_ == kFreehand)
+    {
+        draw_status_ = false;
+        shape_list_.push_back(current_shape_);
+        current_shape_.reset();
+    }
 }
 
 ImVec2 Canvas::mouse_pos_in_canvas() const

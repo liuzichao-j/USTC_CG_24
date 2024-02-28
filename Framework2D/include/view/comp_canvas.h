@@ -39,6 +39,8 @@ class Canvas : public Component
     void set_ellipse();
     void set_polygon();
     void set_freehand();
+    void set_undo();
+    void set_reset();
 
     // Clears all shapes from the canvas.
     void clear_shape_list();
@@ -49,6 +51,9 @@ class Canvas : public Component
     // Controls the visibility of the canvas background.
     void show_background(bool flag);
 
+    float draw_color[4] = { 1.0f, 0, 0, 1.0f };
+    float draw_thickness = 2.0f;
+
    private:
     // Drawing functions.
     void draw_background();
@@ -56,6 +61,7 @@ class Canvas : public Component
 
     // Event handlers for mouse interactions.
     void mouse_click_event();
+    void mouse_right_click_event();
     void mouse_move_event();
     void mouse_release_event();
 

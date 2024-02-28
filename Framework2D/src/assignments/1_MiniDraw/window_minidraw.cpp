@@ -65,9 +65,28 @@ void MiniDraw::draw_canvas()
             std::cout << "Set shape to Freehand" << std::endl;
             p_canvas_->set_freehand();
         }
+        ImGui::SameLine();
+        if (ImGui::Button("Undo"))
+        {
+            std::cout << "Undo once" << std::endl;
+            p_canvas_->set_undo();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Reset"))
+        {
+            std::cout << "Reset once" << std::endl;
+            p_canvas_->set_reset();
+        }
 
         // Canvas component
-        ImGui::Text("Press left mouse to add shapes.");
+        ImGui::Text(
+            "Press left mouse to add shapes. Right Click to stop ongoing paint "
+            "or Complete a Polygon. ");
+        ImGui::Text("Press Shift to draw circle in Ellipse mode. ");
+
+        ImGui::ColorEdit4("Choose Paint Color", p_canvas_->draw_color);
+        ImGui::SliderFloat("float", &p_canvas_->draw_thickness, 0.0f, 10.0f);
+
         // Set the canvas to fill the rest of the window
         const auto& canvas_min = ImGui::GetCursorScreenPos();
         const auto& canvas_size = ImGui::GetContentRegionAvail();
