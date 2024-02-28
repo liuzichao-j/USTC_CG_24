@@ -106,7 +106,7 @@ bool Window::init_gui()
     ImGui::CreateContext();
 
     ImGuiIO& io = ImGui::GetIO();
-    (void)io; 
+    (void)io;
     // - fontsize
     float xscale, yscale;
     glfwGetWindowContentScale(window_, &xscale, &yscale);

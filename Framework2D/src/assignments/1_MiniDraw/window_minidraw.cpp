@@ -27,7 +27,7 @@ void MiniDraw::draw_canvas()
     if (ImGui::Begin(
             "Canvas",
             &flag_show_canvas_view_,
-            ImGuiWindowFlags_NoDecoration|ImGuiWindowFlags_NoBackground))
+            ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground))
     {
         // Buttons for shape types
         if (ImGui::Button("Line"))
@@ -46,7 +46,7 @@ void MiniDraw::draw_canvas()
         //    - Ellipse
         //    - Polygon
         //    - Freehand(optional)
-        
+
         ImGui::SameLine();
         if (ImGui::Button("Ellipse"))
         {

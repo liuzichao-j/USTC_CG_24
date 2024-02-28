@@ -139,7 +139,7 @@ void Canvas::mouse_click_event()
                     start_point_.x, start_point_.y, end_point_.x, end_point_.y);
                 break;
             }
-             
+
             default: break;
         }
     }

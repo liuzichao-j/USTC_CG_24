@@ -68,7 +68,8 @@ void Demo::draw_image()
 }
 void Demo::draw_open_image_file_dialog()
 {
-    IGFD::FileDialogConfig config; config.path = ".";
+    IGFD::FileDialogConfig config;
+    config.path = ".";
     ImGuiFileDialog::Instance()->OpenDialog(
         "ChooseImageOpenFileDlg", "Choose Image File", ".png,.jpg", config);
     if (ImGuiFileDialog::Instance()->Display("ChooseImageOpenFileDlg"))
