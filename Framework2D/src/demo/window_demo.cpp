@@ -74,6 +74,7 @@ void Demo::draw_open_image_file_dialog()
         "ChooseImageOpenFileDlg", "Choose Image File", ".png,.jpg", config);
     if (ImGuiFileDialog::Instance()->Display("ChooseImageOpenFileDlg"))
     {
+        printf("111\n");
         if (ImGuiFileDialog::Instance()->IsOk())
         {
             std::string filePathName =

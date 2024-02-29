@@ -1,11 +1,14 @@
 #include "view/comp_canvas.h"
 
+#include <ImGuiFileDialog.h>
+
 #include <cmath>
 #include <iostream>
 
 #include "imgui.h"
 #include "view/shapes/ellipse.h"
 #include "view/shapes/freehand.h"
+#include "view/shapes/images.h"
 #include "view/shapes/line.h"
 #include "view/shapes/polygon.h"
 #include "view/shapes/rect.h"
@@ -25,6 +28,11 @@ void Canvas::draw()
         mouse_release_event();
 
     draw_shapes();
+
+    if (flag_open_file_dialog_)
+    {
+        draw_open_image_file_dialog();
+    }
 }
 
 void Canvas::set_attributes(const ImVec2& min, const ImVec2& size)
@@ -92,6 +100,12 @@ void Canvas::set_reset()
     shape_list_.clear();
 }
 
+void Canvas::set_image()
+{
+    flag_open_file_dialog_ = true;
+    printf("non draw and open dialog\n");
+}
+
 void Canvas::clear_shape_list()
 {
     shape_list_.clear();
@@ -134,8 +148,40 @@ void Canvas::draw_shapes()
     draw_list->PopClipRect();
 }
 
+void Canvas::draw_open_image_file_dialog()
+{
+    IGFD::FileDialogConfig config;
+    config.path = ".";
+    ImGuiFileDialog::Instance()->IsOpened();
+    ImGuiFileDialog::Instance()->OpenDialog(
+        "ChooseImageOpenFileDlg", "Choose Image File", ".png,.jpg", config);
+    if (ImGuiFileDialog::Instance()->Display("ChooseImageOpenFileDlg"))
+    {
+        printf("%d\n", 111);
+        if (ImGuiFileDialog::Instance()->IsOk())
+        {
+            std::string filePathName =
+                ImGuiFileDialog::Instance()->GetFilePathName();
+            std::string label = filePathName;
+            current_shape_ =
+                std::make_shared<Images>(filePathName, canvas_size_);
+        }
+        ImGuiFileDialog::Instance()->Close();
+    printf("closed\n");
+
+        flag_open_file_dialog_ = false;
+        if (current_shape_)
+        {
+            shape_list_.push_back(current_shape_);
+            shape_type_ = kDefault;
+            current_shape_.reset();
+        }
+    }
+}
+
 void Canvas::mouse_click_event()
 {
+    printf("check mouse down!\n");
     // HW1_TODO: Drawing rule for more primitives
     if (!draw_status_)
     {
@@ -187,7 +233,7 @@ void Canvas::mouse_click_event()
             end_point_ = mouse_pos_in_canvas();
             current_shape_->addpoint(end_point_.x, end_point_.y);
         }
-        else
+        else if (shape_type_ != kImage)
         {
             draw_status_ = false;
             if (current_shape_ && shape_type_ != kFreehand)
@@ -221,7 +267,7 @@ void Canvas::mouse_move_event()
     if (draw_status_)
     {
         end_point_ = mouse_pos_in_canvas();
-        if (current_shape_)
+        if (current_shape_ && shape_type_ != kImage)
         {
             for (int i = 0; i < 4; i++)
             {
@@ -229,6 +275,7 @@ void Canvas::mouse_move_event()
                     (unsigned char)(draw_color[i] * 255);
             }
             current_shape_->conf.line_thickness = draw_thickness;
+            current_shape_->conf.filled = draw_filled;
             current_shape_->update(end_point_.x, end_point_.y);
         }
     }

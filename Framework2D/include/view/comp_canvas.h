@@ -30,6 +30,7 @@ class Canvas : public Component
         kEllipse = 3,
         kPolygon = 4,
         kFreehand = 5,
+        kImage = 6,
     };
 
     // Shape type setters.
@@ -41,6 +42,7 @@ class Canvas : public Component
     void set_freehand();
     void set_undo();
     void set_reset();
+    void set_image();
 
     // Clears all shapes from the canvas.
     void clear_shape_list();
@@ -53,11 +55,15 @@ class Canvas : public Component
 
     float draw_color[4] = { 1.0f, 0, 0, 1.0f };
     float draw_thickness = 2.0f;
+    bool draw_filled = false;
+    
+    bool flag_open_file_dialog_ = false;
 
    private:
     // Drawing functions.
     void draw_background();
     void draw_shapes();
+    void draw_open_image_file_dialog();
 
     // Event handlers for mouse interactions.
     void mouse_click_event();

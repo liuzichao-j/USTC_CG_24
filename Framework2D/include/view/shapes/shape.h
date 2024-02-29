@@ -13,6 +13,7 @@ class Shape
         // Line color in RGBA format
         unsigned char line_color[4] = { 255, 0, 0, 255 };
         float line_thickness = 2.0f;
+        bool filled = false;
     } conf;
 
    public:
