@@ -103,9 +103,8 @@ void Canvas::set_reset()
 void Canvas::set_image()
 {
     draw_status_ = false;
-    shape_type_= kImage;
+    shape_type_ = kImage;
     flag_open_file_dialog_ = true;
-    printf("non draw and open dialog\n");
 }
 
 void Canvas::clear_shape_list()
@@ -154,12 +153,11 @@ void Canvas::draw_open_image_file_dialog()
 {
     IGFD::FileDialogConfig config;
     config.path = ".";
-    config.flag= ImGuiFileDialogFlags_Modal;
+    config.flags = ImGuiFileDialogFlags_Modal;
     ImGuiFileDialog::Instance()->OpenDialog(
         "ChooseImageOpenFileDlg", "Choose Image File", ".png,.jpg", config);
     if (ImGuiFileDialog::Instance()->Display("ChooseImageOpenFileDlg"))
     {
-        printf("%d\n", 111);
         if (ImGuiFileDialog::Instance()->IsOk())
         {
             std::string filePathName =
@@ -169,7 +167,6 @@ void Canvas::draw_open_image_file_dialog()
                 std::make_shared<Images>(filePathName, canvas_size_);
         }
         ImGuiFileDialog::Instance()->Close();
-    printf("closed\n");
 
         flag_open_file_dialog_ = false;
         if (current_shape_)
@@ -183,7 +180,6 @@ void Canvas::draw_open_image_file_dialog()
 
 void Canvas::mouse_click_event()
 {
-    printf("check mouse down!\n");
     // HW1_TODO: Drawing rule for more primitives
     if (!draw_status_)
     {
