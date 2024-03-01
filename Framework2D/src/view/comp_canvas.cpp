@@ -102,6 +102,8 @@ void Canvas::set_reset()
 
 void Canvas::set_image()
 {
+    draw_status_ = false;
+    shape_type_= kImage;
     flag_open_file_dialog_ = true;
     printf("non draw and open dialog\n");
 }
@@ -152,7 +154,7 @@ void Canvas::draw_open_image_file_dialog()
 {
     IGFD::FileDialogConfig config;
     config.path = ".";
-    ImGuiFileDialog::Instance()->IsOpened();
+    config.flag= ImGuiFileDialogFlags_Modal;
     ImGuiFileDialog::Instance()->OpenDialog(
         "ChooseImageOpenFileDlg", "Choose Image File", ".png,.jpg", config);
     if (ImGuiFileDialog::Instance()->Display("ChooseImageOpenFileDlg"))
