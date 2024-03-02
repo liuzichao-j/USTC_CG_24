@@ -40,9 +40,16 @@ class Canvas : public Component
     void set_ellipse();
     void set_polygon();
     void set_freehand();
-    void set_undo();
+    void set_delete();
     void set_reset();
     void set_image();
+    void set_goup();
+    void set_godown();
+
+    // Select and delete shapes.
+    void set_select();
+    void set_select_delete();
+    void set_draw();
 
     // Clears all shapes from the canvas.
     void clear_shape_list();
@@ -53,11 +60,20 @@ class Canvas : public Component
     // Controls the visibility of the canvas background.
     void show_background(bool flag);
 
-    float draw_color[4] = { 1.0f, 0, 0, 1.0f };
-    float draw_thickness = 2.0f;
-    bool draw_filled = false;
-    
-    bool flag_open_file_dialog_ = false;
+    // Tell what type of shape is currently being drawn.
+    ShapeType get_shape_type() const;
+
+    float draw_color[4] = { 1.0f,
+                            0,
+                            0,
+                            1.0f };  // The color of the shape to be drawn.
+    float draw_thickness = 2.0f;     // The thickness of the shape to be drawn.
+    bool draw_filled = false;        // Whether the shape to be drawn is filled.
+    float image_size = 1;            // The size of the image to be drawn.
+    float image_bia[2] = { 0.5f, 0.5f };  // The bia of image from the center.
+
+    bool flag_open_file_dialog_ = false;  // Whether to open the file dialog.
+    bool select_mode_ = false;  // Is the user currently selecting a shape.
 
    private:
     // Drawing functions.
@@ -92,6 +108,8 @@ class Canvas : public Component
     ShapeType shape_type_;
     ImVec2 start_point_, end_point_;
     std::shared_ptr<Shape> current_shape_;
+    std::shared_ptr<Shape> selected_shape_;
+    int selected_shape_index_ = -1;
 
     // List of shapes drawn on the canvas.
     std::vector<std::shared_ptr<Shape>> shape_list_;

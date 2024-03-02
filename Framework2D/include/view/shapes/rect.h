@@ -32,9 +32,12 @@ class Rect : public Shape
     // interaction
     void update(float x, float y) override;
 
-    void addpoint(float x, float y) override
+    int get_shape_type() const override
     {
+        return 2;
     }
+
+    bool is_select_on(float x, float y) const override;
 
    private:
     // Coordinates of the top-left and bottom-right corners of the rectangle

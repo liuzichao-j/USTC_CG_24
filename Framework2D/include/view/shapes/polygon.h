@@ -35,10 +35,16 @@ class Polygon : public Shape
     // interaction
     void update(float x, float y) override;
 
-    void addpoint(float x, float y) override;
+    int get_shape_type() const override
+    {
+        return 4;
+    }
+
+    bool is_select_on(float x, float y) const override;
 
    private:
-    std::vector<float> points_x_, points_y_;
-    float end_point_x_, end_point_y_;
+    std::vector<float> points_x_,
+        points_y_;  // A series of points that make up the polygon
+    float end_point_x_, end_point_y_;  // End coordinates of the polygon
 };
 }  // namespace USTC_CG

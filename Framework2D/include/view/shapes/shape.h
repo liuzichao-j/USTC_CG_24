@@ -12,8 +12,18 @@ class Shape
         float bias[2] = { 0.f, 0.f };
         // Line color in RGBA format
         unsigned char line_color[4] = { 255, 0, 0, 255 };
+        // Line thickness
         float line_thickness = 2.0f;
+        // Whether the shape is filled
         bool filled = false;
+
+        // Size of the shape
+        float image_size = 1;
+        // Bia of image
+        float image_bia[2] = { 0.5f, 0.5f };
+
+        // Color change of selected shape
+        float time = 0;
     } conf;
 
    public:
@@ -41,6 +51,20 @@ class Shape
      */
     virtual void update(float x, float y) = 0;
 
-    virtual void addpoint(float x, float y) = 0;
+    /**
+     * Get the type of the shape.
+     * This function is used to get the type of the shape.
+     *
+     * @return The type of the shape.
+     */
+    virtual int get_shape_type() const = 0;
+
+    /**
+     * Check if the point is in the shape.
+     * This function is used to check if the point is in the shape.
+     *
+     * @param x, y The point to be checked.
+     */
+    virtual bool is_select_on(float x, float y) const = 0;
 };
 }  // namespace USTC_CG

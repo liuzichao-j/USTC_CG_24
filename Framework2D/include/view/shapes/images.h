@@ -4,9 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 
-#include <memory>
 #include <string>
-#include <vector>
 
 #include "shape.h"
 
@@ -25,25 +23,24 @@ class Images : public Shape
 
     // Overrides Shape's update function to adjust the end point during
     // interaction
-    void update(float x, float y) override
-    {
-        canvas_size_x_ = x;
-        canvas_size_y_ = y;
-    }
-
-    void addpoint(float x, float y) override
-    {
-    }
+    void update(float x, float y) override;
 
     // Loads the image file into OpenGL texture memory.
     void loadgltexture();
+
+    int get_shape_type() const override
+    {
+        return 6;
+    }
+
+    bool is_select_on(float x, float y) const override;
 
    protected:
     std::string filename_;                 // Path to the image file.
     unsigned char* image_data_ = nullptr;  // Raw pixel data of the image.
     GLuint tex_id_ = 0;                    // OpenGL texture identifier.
 
-    float canvas_size_x_ = 0, canvas_size_y_ = 0;
+    float canvas_size_x_ = 0, canvas_size_y_ = 0;  // Size of the canvas.
 
     int image_width_ = 0, image_height_ = 0;  // Dimensions of the loaded image.
 };

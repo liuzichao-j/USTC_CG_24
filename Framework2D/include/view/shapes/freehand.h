@@ -29,11 +29,15 @@ class Freehand : public Shape
     // interaction
     void update(float x, float y) override;
 
-    void addpoint(float x, float y) override
+    int get_shape_type() const override
     {
+        return 5;
     }
 
+    bool is_select_on(float x, float y) const override;
+
    private:
+    // A series of points that make up the freehand shape
     std::vector<float> points_x_, points_y_;
 };
 }  // namespace USTC_CG

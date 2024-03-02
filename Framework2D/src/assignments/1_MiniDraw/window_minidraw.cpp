@@ -29,89 +29,203 @@ void MiniDraw::draw_canvas()
             &flag_show_canvas_view_,
             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground))
     {
+        // 按钮的大小
         ImVec2 button_size = ImVec2(0.08f * ImGui::GetColumnWidth(), 0);
-        // Buttons for shape types
-        if (ImGui::Button("Line", button_size))
+
+        if (!p_canvas_->select_mode_)
         {
-            std::cout << "Set shape to Line" << std::endl;
-            p_canvas_->set_line();
+            // Select button
+            if (ImGui::Button("Select", button_size))
+            {
+                std::cout << "Set shape to Select" << std::endl;
+                p_canvas_->set_select();
+            }
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(0.1f * ImGui::GetColumnWidth());
+            ImGui::Text("        ");
+            ImGui::SameLine();
+
+            // Buttons for shape types
+            if (ImGui::Button("Line", button_size))
+            {
+                std::cout << "Set shape to Line" << std::endl;
+                p_canvas_->set_line();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Rectangle", button_size))
+            {
+                std::cout << "Set shape to Rect" << std::endl;
+                p_canvas_->set_rect();
+            }
+
+            // HW1_TODO: More primitives
+            //    - Ellipse
+            //    - Polygon
+            //    - Freehand(optional)
+
+            ImGui::SameLine();
+            if (ImGui::Button("Ellipse", button_size))
+            {
+                std::cout << "Set shape to Ellipse" << std::endl;
+                p_canvas_->set_ellipse();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Polygon", button_size))
+            {
+                std::cout << "Set shape to Polygon" << std::endl;
+                p_canvas_->set_polygon();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Freehand", button_size))
+            {
+                std::cout << "Set shape to Freehand" << std::endl;
+                p_canvas_->set_freehand();
+            }
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(0.1f * ImGui::GetColumnWidth());
+            ImGui::Text("        ");
+            ImGui::SameLine();
+            if (ImGui::Button("Delete", button_size))
+            {
+                std::cout << "Delete once" << std::endl;
+                p_canvas_->set_delete();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Reset", button_size))
+            {
+                std::cout << "Reset once" << std::endl;
+                p_canvas_->set_reset();
+            }
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(0.1f * ImGui::GetColumnWidth());
+            ImGui::Text("        ");
+            ImGui::SameLine();
+            if (ImGui::Button("Image", button_size))
+            {
+                std::cout << "Plugin Image" << std::endl;
+                p_canvas_->set_image();
+            }
+
+            // Canvas component
+            ImGui::Text(
+                "Press left mouse to add shapes. Right Click to stop ongoing "
+                "paint or Complete a Polygon. ");
+            ImGui::Text(
+                "Press Shift to draw square in Rectangle mode and draw circle "
+                "in Ellipse mode. ");
         }
-        ImGui::SameLine();
-        if (ImGui::Button("Rect", button_size))
+        else
         {
-            std::cout << "Set shape to Rect" << std::endl;
-            p_canvas_->set_rect();
+            if (ImGui::Button("Draw", button_size))
+            {
+                std::cout << "Draw mode" << std::endl;
+                p_canvas_->set_draw();
+            }
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(0.1f * ImGui::GetColumnWidth());
+            ImGui::Text("        ");
+            ImGui::SameLine();
+            if (ImGui::Button("Delete", button_size))
+            {
+                std::cout << "Delete selected shape" << std::endl;
+                p_canvas_->set_select_delete();
+            }
+
+            if (p_canvas_->get_shape_type() != Canvas::ShapeType::kDefault)
+            {
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth(0.1f * ImGui::GetColumnWidth());
+                ImGui::Text("        ");
+                ImGui::SameLine();
+                if (ImGui::Button("Go up", button_size))
+                {
+                    std::cout << "Go up once" << std::endl;
+                    p_canvas_->set_goup();
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Go down", button_size))
+                {
+                    std::cout << "Go down once" << std::endl;
+                    p_canvas_->set_godown();
+                }
+            }
+
+            // Canvas component
+            ImGui::Text("Selete one item on the canvas, which will sparkle. ");
+            ImGui::Text(
+                "You can change shape as before. You can change the place and "
+                "size of the selected image.");
         }
 
-        // HW1_TODO: More primitives
-        //    - Ellipse
-        //    - Polygon
-        //    - Freehand(optional)
-
-        ImGui::SameLine();
-        if (ImGui::Button("Ellipse", button_size))
+        // 选取颜色，设置线条粗细，设置是否填充，设置图像大小
+        if (p_canvas_->get_shape_type() != Canvas::ShapeType::kImage)
         {
-            std::cout << "Set shape to Ellipse" << std::endl;
-            p_canvas_->set_ellipse();
+            ImGui::SetNextItemWidth(0.4f * ImGui::GetColumnWidth());
+            ImGui::ColorEdit4(
+                "", p_canvas_->draw_color, ImGuiColorEditFlags_PickerHueWheel);
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(0.025f * ImGui::GetColumnWidth());
+            ImGui::Text("     ");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(0.4f * ImGui::GetColumnWidth());
+            ImGui::DragFloat(
+                "Thickness",
+                &p_canvas_->draw_thickness,
+                0.05f,
+                1.0f,
+                FLT_MAX / INT_MAX,
+                "%.3f",
+                ImGuiSliderFlags_AlwaysClamp);
         }
-        ImGui::SameLine();
-        if (ImGui::Button("Polygon", button_size))
+        else
         {
-            std::cout << "Set shape to Polygon" << std::endl;
-            p_canvas_->set_polygon();
+            p_canvas_->draw_color[0] = 1.0f;
+            p_canvas_->draw_color[1] = 0.0f;
+            p_canvas_->draw_color[2] = 0.0f;
+            p_canvas_->draw_color[3] = 1.0f;
+            p_canvas_->draw_thickness = 2.0f;
         }
-        ImGui::SameLine();
-        if (ImGui::Button("Freehand", button_size))
+        if (p_canvas_->get_shape_type() == Canvas::ShapeType::kRect ||
+            p_canvas_->get_shape_type() == Canvas::ShapeType::kEllipse)
         {
-            std::cout << "Set shape to Freehand" << std::endl;
-            p_canvas_->set_freehand();
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(0.025f * ImGui::GetColumnWidth());
+            ImGui::Text("     ");
+            ImGui::SameLine();
+            ImGui::Checkbox("Filled", &p_canvas_->draw_filled);
         }
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(0.1f * ImGui::GetColumnWidth());
-        ImGui::Text("          ");
-        ImGui::SameLine();
-        if (ImGui::Button("Undo", button_size))
+        else
         {
-            std::cout << "Undo once" << std::endl;
-            p_canvas_->set_undo();
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Reset", button_size))
-        {
-            std::cout << "Reset once" << std::endl;
-            p_canvas_->set_reset();
-        }
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(0.1f * ImGui::GetColumnWidth());
-        ImGui::Text("          ");
-        ImGui::SameLine();
-        if (ImGui::Button("Image", button_size))
-        {
-            std::cout << "Plugin Image" << std::endl;
-            p_canvas_->set_image();
+            p_canvas_->draw_filled = false;
         }
 
-        // Canvas component
+        if (p_canvas_->select_mode_ &&
+            p_canvas_->get_shape_type() == Canvas::ShapeType::kImage)
+        {
+            ImGui::SetNextItemWidth(0.4f * ImGui::GetColumnWidth());
+            ImGui::DragFloat(
+                "Size of Image",
+                &p_canvas_->image_size,
+                0.01f,
+                0.0f,
+                FLT_MAX / INT_MAX,
+                "%.3f",
+                ImGuiSliderFlags_AlwaysClamp);
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(0.025f * ImGui::GetColumnWidth());
+            ImGui::Text("     ");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(0.4f * ImGui::GetColumnWidth());
+            ImGui::DragFloat2(
+                "Place of Image ( x , y )",
+                p_canvas_->image_bia,
+                0.01f,
+                0.0f,
+                1.0f);
+        }
         ImGui::Text(
-            "Press left mouse to add shapes. Right Click to stop ongoing paint "
-            "or Complete a Polygon. ");
-        ImGui::Text("Press Shift to draw circle in Ellipse mode. ");
-
-        ImGui::SetNextItemWidth(0.4f * ImGui::GetColumnWidth());
-        ImGui::ColorEdit4(
-            "", p_canvas_->draw_color, ImGuiColorEditFlags_PickerHueWheel);
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(0.075f * ImGui::GetColumnWidth());
-        ImGui::Text("          ");
-        ImGui::SameLine();
-        ImGui::Checkbox("Filled", &p_canvas_->draw_filled);
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(0.075f * ImGui::GetColumnWidth());
-        ImGui::Text("          ");
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(0.4f * ImGui::GetColumnWidth());
-        ImGui::SliderFloat(
-            "Thickness", &p_canvas_->draw_thickness, 1.0f, 15.0f);
+            "Press Alt to drag more accurate. Press Shift otherwisely. To "
+            "enter value, press Ctrl or double click. ");
 
         // Set the canvas to fill the rest of the window
         const auto& canvas_min = ImGui::GetCursorScreenPos();

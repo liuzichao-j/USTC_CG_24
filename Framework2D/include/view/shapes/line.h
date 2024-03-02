@@ -31,11 +31,15 @@ class Line : public Shape
     // interaction
     void update(float x, float y) override;
 
-    void addpoint(float x, float y) override
+    int get_shape_type() const override
     {
+        return 1;
     }
+    
+    bool is_select_on(float x, float y) const override;
 
    private:
+    // Start and end coordinates of the line
     float start_point_x_, start_point_y_, end_point_x_, end_point_y_;
 };
 }  // namespace USTC_CG
