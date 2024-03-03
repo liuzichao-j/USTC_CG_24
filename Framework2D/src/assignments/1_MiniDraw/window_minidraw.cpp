@@ -32,7 +32,7 @@ void MiniDraw::draw_canvas()
         // 按钮的大小
         ImVec2 button_size = ImVec2(0.08f * ImGui::GetColumnWidth(), 0);
 
-        if (!p_canvas_->select_mode_)
+        if (!p_canvas_->select_mode_)  // 绘制模式下的UI
         {
             // Select button
             if (ImGui::Button("Select", button_size))
@@ -114,8 +114,9 @@ void MiniDraw::draw_canvas()
                 "Press Shift to draw square in Rectangle mode and draw circle "
                 "in Ellipse mode. ");
         }
-        else
+        else  // 选择模式下的UI
         {
+            // Draw button and delete button
             if (ImGui::Button("Draw", button_size))
             {
                 std::cout << "Draw mode" << std::endl;
@@ -131,6 +132,7 @@ void MiniDraw::draw_canvas()
                 p_canvas_->set_select_delete();
             }
 
+            // Go up and go down button only when there is a selected shape
             if (p_canvas_->get_shape_type() != Canvas::ShapeType::kDefault)
             {
                 ImGui::SameLine();
@@ -157,12 +159,26 @@ void MiniDraw::draw_canvas()
                 "size of the selected image.");
         }
 
-        // 选取颜色，设置线条粗细，设置是否填充，设置图像大小
+        // 对形状对象，设置颜色
         if (p_canvas_->get_shape_type() != Canvas::ShapeType::kImage)
         {
             ImGui::SetNextItemWidth(0.4f * ImGui::GetColumnWidth());
             ImGui::ColorEdit4(
                 "", p_canvas_->draw_color, ImGuiColorEditFlags_PickerHueWheel);
+        }
+        else
+        {
+            // 对图像对象，设置颜色为默认值
+            p_canvas_->draw_color[0] = 1.0f;
+            p_canvas_->draw_color[1] = 0.0f;
+            p_canvas_->draw_color[2] = 0.0f;
+            p_canvas_->draw_color[3] = 1.0f;
+        }
+
+        // 设置粗细，如果填充了则隐藏该项
+        if (p_canvas_->get_shape_type() != Canvas::ShapeType::kImage &&
+            !p_canvas_->draw_filled)
+        {
             ImGui::SameLine();
             ImGui::SetNextItemWidth(0.025f * ImGui::GetColumnWidth());
             ImGui::Text("     ");
@@ -179,12 +195,10 @@ void MiniDraw::draw_canvas()
         }
         else
         {
-            p_canvas_->draw_color[0] = 1.0f;
-            p_canvas_->draw_color[1] = 0.0f;
-            p_canvas_->draw_color[2] = 0.0f;
-            p_canvas_->draw_color[3] = 1.0f;
             p_canvas_->draw_thickness = 2.0f;
         }
+
+        // 是否填充的设置仅对矩形和椭圆有效，此时显示填充选项，粗细设为默认值
         if (p_canvas_->get_shape_type() == Canvas::ShapeType::kRect ||
             p_canvas_->get_shape_type() == Canvas::ShapeType::kEllipse)
         {
@@ -199,6 +213,7 @@ void MiniDraw::draw_canvas()
             p_canvas_->draw_filled = false;
         }
 
+        // 对图像对象，若选中，设置图像大小和位置
         if (p_canvas_->select_mode_ &&
             p_canvas_->get_shape_type() == Canvas::ShapeType::kImage)
         {
@@ -223,6 +238,14 @@ void MiniDraw::draw_canvas()
                 0.0f,
                 1.0f);
         }
+        else
+        {
+            // 对于其他形状对象，设置图像大小和位置为默认值
+            p_canvas_->image_size = 1.0f;
+            p_canvas_->image_bia[0] = 0.5f;
+            p_canvas_->image_bia[1] = 0.5f;
+        }
+
         ImGui::Text(
             "Press Alt to drag more accurate. Press Shift otherwisely. To "
             "enter value, press Ctrl or double click. ");

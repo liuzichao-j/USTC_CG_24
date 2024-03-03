@@ -25,6 +25,7 @@ void Canvas::draw()
 {
     draw_background();
 
+    // 处理鼠标事件
     if (is_hovered_ && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         mouse_click_event();
     if (is_hovered_ && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
@@ -121,7 +122,7 @@ void Canvas::set_freehand()
 }
 
 /**
- * @brief 撤销上一步的绘制。
+ * @brief 删除最后一个图形。
  */
 void Canvas::set_delete()
 {
@@ -147,7 +148,7 @@ void Canvas::set_reset()
 void Canvas::set_image()
 {
     draw_status_ = false;
-    shape_type_ = kImage;
+    shape_type_ = kImage;  // 临时设置为图片类型，等待用户选择图片文件。
     flag_open_file_dialog_ = true;
 }
 
@@ -158,7 +159,7 @@ void Canvas::set_select()
 {
     draw_status_ = false;
     current_shape_.reset();
-    shape_type_ = kDefault;
+    shape_type_ = kDefault;  // 选择模式下，不允许绘制图形。
 
     select_mode_ = true;
     if (selected_shape_)
@@ -177,7 +178,7 @@ void Canvas::set_select_delete()
     if (selected_shape_ && selected_shape_index_ >= 0 &&
         selected_shape_index_ < shape_list_.size())
     {
-        selected_shape_->conf.time = 0;
+        selected_shape_->conf.time = 0;  // 删除前恢复图形的颜色。
         selected_shape_.reset();
         shape_list_.erase(shape_list_.begin() + selected_shape_index_);
         selected_shape_index_ = -1;
@@ -201,6 +202,7 @@ void Canvas::set_draw()
     current_shape_.reset();
     shape_type_ = kDefault;
 
+    // 设置默认的绘制参数。
     draw_color[0] = 1.0f;
     draw_color[1] = 0.0f;
     draw_color[2] = 0.0f;
@@ -219,8 +221,11 @@ void Canvas::set_goup()
 {
     if (selected_shape_ && selected_shape_index_ < shape_list_.size() - 1)
     {
-        std::swap(shape_list_[selected_shape_index_],
-                  shape_list_[selected_shape_index_ + 1]);
+        std::swap(
+            shape_list_[selected_shape_index_],
+            shape_list_
+                [selected_shape_index_ +
+                 1]);  // 使用swap函数交换vector中的两个元素（均为指针）。
         selected_shape_index_++;
     }
 }
@@ -232,8 +237,9 @@ void Canvas::set_godown()
 {
     if (selected_shape_ && selected_shape_index_ > 0)
     {
-        std::swap(shape_list_[selected_shape_index_],
-                  shape_list_[selected_shape_index_ - 1]);
+        std::swap(
+            shape_list_[selected_shape_index_],
+            shape_list_[selected_shape_index_ - 1]);
         selected_shape_index_--;
     }
 }
@@ -246,9 +252,16 @@ void Canvas::clear_shape_list()
     shape_list_.clear();
 }
 
+/**
+ * @brief 获取当前绘制或选择的图形类型。
+ *
+ * 获取当前绘制或选择的图形类型，用来针对不同的图形类型显示不同的UI。
+ *
+ * @return 当前绘制或选择的图形类型。
+ */
 Canvas::ShapeType Canvas::get_shape_type() const
 {
-    if(!select_mode_)
+    if (!select_mode_)
     {
         return shape_type_;
     }
@@ -257,6 +270,7 @@ Canvas::ShapeType Canvas::get_shape_type() const
         if (selected_shape_)
         {
             return (Canvas::ShapeType)selected_shape_->get_shape_type();
+            // 避免在Shape中包含Canvas类，使用int类型再强制类型转换。
         }
         else
         {
@@ -296,7 +310,7 @@ void Canvas::draw_shapes()
     // 传入画布的左上角坐标作为偏移量，设置图像大小。
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
-    // 对选中的元素，进行闪烁或缩放处理。
+    // 对选中的元素，进行闪烁处理。对于图片增加边框，边框做闪烁处理。
     if (selected_shape_)
     {
         selected_shape_->conf.time += 0.05f;
@@ -344,9 +358,9 @@ void Canvas::draw_open_image_file_dialog()
         if (current_shape_)
         {
             shape_list_.push_back(current_shape_);
-            shape_type_ = kDefault;
             current_shape_.reset();
         }
+        shape_type_ = kDefault;
     }
 }
 
@@ -358,12 +372,15 @@ void Canvas::mouse_click_event()
     // HW1_TODO: Drawing rule for more primitives
     if (select_mode_)
     {
+        // 清除过去选中的图形。
         if (selected_shape_)
         {
             selected_shape_->conf.time = 0;
             selected_shape_index_ = -1;
             selected_shape_.reset();
         }
+
+        // 遍历所有图形，找到鼠标点击的图形。
         ImVec2 mouse_pos = mouse_pos_in_canvas();
         for (int i = (int)shape_list_.size() - 1; i >= 0; i--)
         {
@@ -374,6 +391,8 @@ void Canvas::mouse_click_event()
                 break;
             }
         }
+
+        // 更新UI，参数调节处设置为选中图形的参数。
         if (selected_shape_)
         {
             selected_shape_->conf.time = 0;
@@ -390,10 +409,12 @@ void Canvas::mouse_click_event()
     }
     else if (!draw_status_)
     {
+        // 绘制模式，开始绘制图形。
         draw_status_ = true;
         start_point_ = end_point_ = mouse_pos_in_canvas();
         switch (shape_type_)
         {
+            // 根据不同的图形类型，创建不同的初始图形对象。
             case USTC_CG::Canvas::kDefault:
             {
                 break;
@@ -437,8 +458,11 @@ void Canvas::mouse_click_event()
     }
     else if (shape_type_ != kPolygon)
     {
+        // 绘制模式，但正在绘制，表示结束绘制。Polygon类型的图形在右键点击时结束绘制。
         draw_status_ = false;
-        if (current_shape_ && shape_type_ != kFreehand)
+        if (current_shape_ &&
+            shape_type_ !=
+                kFreehand)  // Freehand类型的图形在鼠标释放时结束绘制。
         {
             shape_list_.push_back(current_shape_);
             current_shape_.reset();
@@ -458,7 +482,9 @@ void Canvas::mouse_right_click_event()
         if (current_shape_ && shape_type_ == kPolygon)
         {
             // 对于多边形，右键点击表示结束绘制
-            current_shape_->update(start_point_.x, start_point_.y);
+            current_shape_->update(
+                start_point_.x,
+                start_point_.y);  // end_point_不计入多边形的点集。
             shape_list_.push_back(current_shape_);
             current_shape_.reset();
         }

@@ -43,13 +43,13 @@ class Canvas : public Component
     void set_delete();
     void set_reset();
     void set_image();
-    void set_goup();
-    void set_godown();
 
-    // Select and delete shapes.
+    // Selecting operations.
     void set_select();
     void set_select_delete();
     void set_draw();
+    void set_goup();
+    void set_godown();
 
     // Clears all shapes from the canvas.
     void clear_shape_list();
@@ -63,6 +63,8 @@ class Canvas : public Component
     // Tell what type of shape is currently being drawn.
     ShapeType get_shape_type() const;
 
+    // overall configuration for drawing shapes and images, set as public for
+    // easy access and modification.
     float draw_color[4] = { 1.0f,
                             0,
                             0,
@@ -72,20 +74,25 @@ class Canvas : public Component
     float image_size = 1;            // The size of the image to be drawn.
     float image_bia[2] = { 0.5f, 0.5f };  // The bia of image from the center.
 
-    bool flag_open_file_dialog_ = false;  // Whether to open the file dialog.
-    bool select_mode_ = false;  // Is the user currently selecting a shape.
+    bool select_mode_ = false;  // Is the user currently selecting a shape. Set
+                                // as public to change UI on drawing buttons.
 
    private:
     // Drawing functions.
     void draw_background();
     void draw_shapes();
     void draw_open_image_file_dialog();
+    bool flag_open_file_dialog_ = false;  // Whether to open the file dialog.
 
     // Event handlers for mouse interactions.
-    void mouse_click_event();
-    void mouse_right_click_event();
-    void mouse_move_event();
-    void mouse_release_event();
+    void mouse_click_event();  // Select a shape, start or end drawing a shape,
+                               // or add a vertex to a polygon (realized in
+                               // update function).
+    void mouse_right_click_event();  // Used to delete ongoing drawing or
+                                     // complete drawing of polygon.
+    void mouse_move_event();  // Update the end point and configuration of the
+                              // current shape.
+    void mouse_release_event();  // Used to draw freehand shapes.
 
     // Calculates mouse's relative position in the canvas.
     ImVec2 mouse_pos_in_canvas() const;
@@ -109,7 +116,8 @@ class Canvas : public Component
     ImVec2 start_point_, end_point_;
     std::shared_ptr<Shape> current_shape_;
     std::shared_ptr<Shape> selected_shape_;
-    int selected_shape_index_ = -1;
+    int selected_shape_index_ =
+        -1;  // Directly visit the selected shape by index.
 
     // List of shapes drawn on the canvas.
     std::vector<std::shared_ptr<Shape>> shape_list_;

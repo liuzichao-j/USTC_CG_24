@@ -1,8 +1,9 @@
 #include "view/shapes/images.h"
-#include <iostream>
+
 #include <math.h>
 
-#define STB_IMAGE_IMPLEMENTATION
+#include <iostream>
+
 #include "stb_image.h"
 
 namespace USTC_CG
@@ -73,7 +74,7 @@ void Images::draw(const Config& config) const
                     255,
                     (unsigned char)((0.5f +
                                      0.5f * cos(conf.time) * cos(conf.time)) *
-                                    255)),
+                                    255)),  // 实现A通道正弦函数变化，范围为0.5倍-1倍
                 0.0f,
                 0,
                 3.0f);
@@ -127,6 +128,7 @@ void Images::loadgltexture()
  */
 bool Images::is_select_on(float x, float y) const
 {
+    // 确定图像的位置范围
     ImVec2 p_min = ImVec2(
         conf.image_bia[0] * canvas_size_x_ - conf.image_size * image_width_ / 2,
         conf.image_bia[1] * canvas_size_y_ -

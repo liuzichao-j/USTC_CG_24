@@ -28,7 +28,8 @@ void Freehand::draw(const Config& config) const
                 conf.line_color[2],
                 (unsigned char)((0.5f +
                                  0.5f * cos(conf.time) * cos(conf.time)) *
-                                conf.line_color[3])),
+                                conf.line_color
+                                    [3])),  // 实现A通道正弦函数变化，范围为0.5倍-1倍
             conf.line_thickness);
     }
 }
@@ -46,6 +47,7 @@ void Freehand::update(float x, float y)
     if (abs(x - points_x_.at(points_x_.size() - 1)) > 5 ||
         abs(y - points_y_.at(points_y_.size() - 1)) > 5)
     {
+        // 两点之间的距离大于5时，添加新点，避免过于密集
         points_x_.push_back(x);
         points_y_.push_back(y);
     }
@@ -61,21 +63,24 @@ void Freehand::update(float x, float y)
  */
 bool Freehand::is_select_on(float x, float y) const
 {
-    // 线段的处理方式：用未知点到线段两端点的距离之和与线段的长度的差值判断是否在线段上
+    // 线段的处理方式：绘制垂直线，若距离小于线宽且交点在线段上（与两端点差值之积小于等于0），则认为点在图形上。
+    // 引入正态分布函数，使得线宽越小判断越宽松，线宽越大判断越严格，便于用户操作。
     for (int i = 0; i < points_x_.size() - 1; i++)
     {
-        double dis1 = sqrt(
-            (points_x_.at(i) - x) * (points_x_.at(i) - x) +
-            (points_y_.at(i) - y) * (points_y_.at(i) - y));
-        double dis2 = sqrt(
-            (points_x_.at(i + 1) - x) * (points_x_.at(i + 1) - x) +
-            (points_y_.at(i + 1) - y) * (points_y_.at(i + 1) - y));
+        double k1 = (points_y_.at(i + 1) - points_y_.at(i)) /
+                    (points_x_.at(i + 1) - points_x_.at(i));
+        double b1 = points_y_.at(i) - k1 * points_x_.at(i);
+        double k2 = -1 / k1;
+        double b2 = y - k2 * x;
+        double cross_x = (b2 - b1) / (k1 - k2);
         double dis = sqrt(
-            (points_x_.at(i) - points_x_.at(i + 1)) *
-                (points_x_.at(i) - points_x_.at(i + 1)) +
-            (points_y_.at(i) - points_y_.at(i + 1)) *
-                (points_y_.at(i) - points_y_.at(i + 1)));
-        if (dis1 + dis2 - dis < 5)
+            (cross_x - x) * (cross_x - x) +
+            (k1 * cross_x + b1 - y) * (k1 * cross_x + b1 - y));
+        if (dis < conf.line_thickness * 0.5f *
+                      (1.0f + 9 * exp(-(conf.line_thickness - 1.0f) *
+                                      (conf.line_thickness - 1.0f) / 4)) &&
+            ((cross_x - points_x_.at(i)) * (cross_x - points_x_.at(i + 1))) <=
+                0)
         {
             return true;
         }

@@ -5,7 +5,6 @@
 
 namespace USTC_CG
 {
-
 /**
  * @brief 绘制矩形形状的方法。
  *
@@ -27,9 +26,11 @@ void Rect::draw(const Config& config) const
                 conf.line_color[0],
                 conf.line_color[1],
                 conf.line_color[2],
-                (unsigned char)((0.5f+0.5f*cos(conf.time) * cos(conf.time)) *
-                                conf.line_color[3])),
-            0.f,  // No rounding of corners
+                (unsigned char)((0.5f +
+                                 0.5f * cos(conf.time) * cos(conf.time)) *
+                                conf.line_color
+                                    [3])),  // 实现A通道正弦函数变化，范围为0.5倍-1倍
+            0.f,                            // No rounding of corners
             ImDrawFlags_None);
     }
     else
@@ -44,9 +45,11 @@ void Rect::draw(const Config& config) const
                 conf.line_color[0],
                 conf.line_color[1],
                 conf.line_color[2],
-                (unsigned char)((0.5f+0.5f*cos(conf.time) * cos(conf.time)) *
-                                conf.line_color[3])),
-            0.f,  // No rounding of corners
+                (unsigned char)((0.5f +
+                                 0.5f * cos(conf.time) * cos(conf.time)) *
+                                conf.line_color
+                                    [3])),  // 实现A通道正弦函数变化，范围为0.5倍-1倍
+            0.f,                            // No rounding of corners
             ImDrawFlags_None,
             conf.line_thickness);
     }
@@ -99,39 +102,52 @@ void Rect::update(float x, float y)
  */
 bool Rect::is_select_on(float x, float y) const
 {
-    if(conf.filled)
+    if (conf.filled)
     {
-        if(x > start_point_x_ && x < end_point_x_ && y > start_point_y_ && y < end_point_y_)
+        if ((x - start_point_x_) * (x - end_point_x_) <= 0 &&
+            (y - start_point_y_) * (y - end_point_y_) <= 0)
         {
             return true;
         }
-        else
-        {
-            return false;
-        }
+        return false;
     }
     else
     {
-        if(fabs(x - start_point_x_) < 5 && y > start_point_y_ && y < end_point_y_)
+        // 分别判断四条边上的点，若距离小于线宽且另外一个坐标在两端点之间（差值乘积小于等于0），则认为点在图形上。
+        // 引入正态分布函数，使得线宽越小判断越宽松，线宽越大判断越严格，便于用户操作。
+        if (fabs(x - start_point_x_) <
+                conf.line_thickness * 0.5f *
+                    (1.0f + 9 * exp(-(conf.line_thickness - 1.0f) *
+                                 (conf.line_thickness - 1.0f) / 4)) &&
+            (y - start_point_y_) * (y - end_point_y_) <= 0)
         {
             return true;
         }
-        else if(fabs(x - end_point_x_) < 5 && y > start_point_y_ && y < end_point_y_)
+        if (fabs(x - end_point_x_) <
+                conf.line_thickness * 0.5f *
+                    (1.0f + 9 * exp(-(conf.line_thickness - 1.0f) *
+                                 (conf.line_thickness - 1.0f) / 4)) &&
+            (y - start_point_y_) * (y - end_point_y_) <= 0)
         {
             return true;
         }
-        else if(fabs(y - start_point_y_) < 5 && x > start_point_x_ && x < end_point_x_)
+        if (fabs(y - start_point_y_) <
+                conf.line_thickness * 0.5f *
+                    (1.0f + 9 * exp(-(conf.line_thickness - 1.0f) *
+                                 (conf.line_thickness - 1.0f) / 4)) &&
+            (x - start_point_x_) * (x - end_point_x_) <= 0)
         {
             return true;
         }
-        else if(fabs(y - end_point_y_) < 5 && x > start_point_x_ && x < end_point_x_)
+        if (fabs(y - end_point_y_) <
+                conf.line_thickness * 0.5f *
+                    (1.0f + 9 * exp(-(conf.line_thickness - 1.0f) *
+                                 (conf.line_thickness - 1.0f) / 4)) &&
+            (x - start_point_x_) * (x - end_point_x_) <= 0)
         {
             return true;
-        }
-        else
-        {
-            return false;
         }
     }
+    return false;
 }
 }  // namespace USTC_CG

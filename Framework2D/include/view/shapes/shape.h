@@ -42,6 +42,7 @@ class Shape
      * screen.
      */
     virtual void draw(const Config& config) const = 0;
+
     /**
      * Updates the state of the shape.
      * This function allows for dynamic modification of the shape, in response
@@ -55,7 +56,8 @@ class Shape
      * Get the type of the shape.
      * This function is used to get the type of the shape.
      *
-     * @return The type of the shape.
+     * @return The type of the shape in integer, as defined in the enum
+     * ShapeType, to avoid include class Canvas here. 
      */
     virtual int get_shape_type() const = 0;
 

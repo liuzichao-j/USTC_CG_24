@@ -1,10 +1,7 @@
 #include "view/comp_image.h"
-
+#define STB_IMAGE_IMPLEMENTATION
 #include "iostream"
-
-#ifndef STBI_INCLUDE_STB_IMAGE_H
 #include "stb_image.h"
-#endif
 
 namespace USTC_CG
 {

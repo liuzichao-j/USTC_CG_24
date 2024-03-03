@@ -22,8 +22,9 @@ void Line::draw(const Config& config) const
             conf.line_color[0],
             conf.line_color[1],
             conf.line_color[2],
-            (unsigned char)((0.5f+0.5f*cos(conf.time) * cos(conf.time)) *
-                                conf.line_color[3])),
+            (unsigned char)((0.5f + 0.5f * cos(conf.time) * cos(conf.time)) *
+                            conf.line_color
+                                [3])),  // 实现A通道正弦函数变化，范围为0.5倍-1倍
         conf.line_thickness);
 }
 
@@ -49,17 +50,21 @@ void Line::update(float x, float y)
  */
 bool Line::is_select_on(float x, float y) const
 {
-    // 线段的处理方式：用未知点到线段两端点的距离之和与线段的长度的差值判断是否在线段上
-    double dis1 = sqrt(
-        (x - start_point_x_) * (x - start_point_x_) +
-        (y - start_point_y_) * (y - start_point_y_));
-    double dis2 = sqrt(
-        (x - end_point_x_) * (x - end_point_x_) +
-        (y - end_point_y_) * (y - end_point_y_));
+    // 线段的处理方式：绘制垂直线，若距离小于线宽且交点在线段上（与两端点差值之积小于等于0），则认为点在图形上
+    // 引入正态分布函数，使得线宽越小判断越宽松，线宽越大判断越严格，便于用户操作。
+    double k1 =
+        (end_point_y_ - start_point_y_) / (end_point_x_ - start_point_x_);
+    double b1 = start_point_y_ - k1 * start_point_x_;
+    double k2 = -1 / k1;
+    double b2 = y - k2 * x;
+    double cross_x = (b2 - b1) / (k1 - k2);
     double dis = sqrt(
-        (start_point_x_ - end_point_x_) * (start_point_x_ - end_point_x_) +
-        (start_point_y_ - end_point_y_) * (start_point_y_ - end_point_y_));
-    if (fabs(dis - (dis1 + dis2)) < 5)
+        (cross_x - x) * (cross_x - x) +
+        (k1 * cross_x + b1 - y) * (k1 * cross_x + b1 - y));
+    if (dis < conf.line_thickness * 0.5f *
+                  (1.0f + 9 * exp(-(conf.line_thickness - 1.0f) *
+                                  (conf.line_thickness - 1.0f) / 4)) &&
+        ((cross_x - start_point_x_) * (cross_x - end_point_x_)) <= 0)
     {
         return true;
     }
