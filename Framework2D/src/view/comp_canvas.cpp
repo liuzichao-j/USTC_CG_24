@@ -161,7 +161,18 @@ void Canvas::set_select()
     current_shape_.reset();
     shape_type_ = kDefault;  // 选择模式下，不允许绘制图形。
 
-    select_mode_ = true;
+    // 设置默认的绘制参数。
+    draw_color[0] = 1.0f;
+    draw_color[1] = 0.0f;
+    draw_color[2] = 0.0f;
+    draw_color[3] = 1.0f;
+    draw_thickness = 2.0f;
+    draw_filled = false;
+    image_size = 1;
+    image_bia[0] = 0.5f;
+    image_bia[1] = 0.5f;
+
+    select_mode = true;
     if (selected_shape_)
     {
         selected_shape_->conf.time = 0;
@@ -190,7 +201,7 @@ void Canvas::set_select_delete()
  */
 void Canvas::set_draw()
 {
-    select_mode_ = false;
+    select_mode = false;
     if (selected_shape_)
     {
         selected_shape_->conf.time = 0;
@@ -261,7 +272,7 @@ void Canvas::clear_shape_list()
  */
 Canvas::ShapeType Canvas::get_shape_type() const
 {
-    if (!select_mode_)
+    if (!select_mode)
     {
         return shape_type_;
     }
@@ -370,7 +381,7 @@ void Canvas::draw_open_image_file_dialog()
 void Canvas::mouse_click_event()
 {
     // HW1_TODO: Drawing rule for more primitives
-    if (select_mode_)
+    if (select_mode)
     {
         // 清除过去选中的图形。
         if (selected_shape_)
@@ -514,7 +525,7 @@ void Canvas::mouse_move_event()
             current_shape_->update(end_point_.x, end_point_.y);
         }
     }
-    if (select_mode_)
+    if (select_mode)
     {
         if (selected_shape_)
         {

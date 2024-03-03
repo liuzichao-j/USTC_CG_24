@@ -32,7 +32,7 @@ void MiniDraw::draw_canvas()
         // 按钮的大小
         ImVec2 button_size = ImVec2(0.08f * ImGui::GetColumnWidth(), 0);
 
-        if (!p_canvas_->select_mode_)  // 绘制模式下的UI
+        if (!p_canvas_->select_mode)  // 绘制模式下的UI
         {
             // Select button
             if (ImGui::Button("Select", button_size))
@@ -214,7 +214,7 @@ void MiniDraw::draw_canvas()
         }
 
         // 对图像对象，若选中，设置图像大小和位置
-        if (p_canvas_->select_mode_ &&
+        if (p_canvas_->select_mode &&
             p_canvas_->get_shape_type() == Canvas::ShapeType::kImage)
         {
             ImGui::SetNextItemWidth(0.4f * ImGui::GetColumnWidth());

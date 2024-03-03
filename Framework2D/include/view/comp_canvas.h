@@ -74,7 +74,7 @@ class Canvas : public Component
     float image_size = 1;            // The size of the image to be drawn.
     float image_bia[2] = { 0.5f, 0.5f };  // The bia of image from the center.
 
-    bool select_mode_ = false;  // Is the user currently selecting a shape. Set
+    bool select_mode = false;  // Is the user currently selecting a shape. Set
                                 // as public to change UI on drawing buttons.
 
    private:
