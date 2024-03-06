@@ -8,7 +8,7 @@
 using namespace Annoy;
 int main() {
   int f = 40;
-  AnnoyIndex<int, float, Euclidean, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy> index(f); // Ê¹ÓÃÅ·ÊÏ¾àÀë
+  AnnoyIndex<int, float, Euclidean, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy> index(f); // ä½¿ç”¨æ¬§æ°è·ç¦»
 
   // Randomly sample 1000 points in dimension f
   for (int i = 0; i < 1000; ++i) {
