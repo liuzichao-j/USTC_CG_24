@@ -6,24 +6,39 @@ namespace USTC_CG
 {
 using uchar = unsigned char;
 
+/**
+ * @brief Construct a new CompWarping object
+ * Init, Stored in Father Class ImageEditor, Backup in CompWarping
+ * @param label The label of the image
+ * @param filename The filename of the image
+ */
 CompWarping::CompWarping(const std::string& label, const std::string& filename)
     : ImageEditor(label, filename)
 {
     if (data_)
+    {
         back_up_ = std::make_shared<Image>(*data_);
+    }
 }
 
 void CompWarping::draw()
 {
-    // Draw the image
+    // Draw the image, not about the toolbar
     ImageEditor::draw();
     // Draw the canvas
     if (flag_enable_selecting_points_)
+    {
         select_points();
+    }
 }
 
+/**
+ * @brief Invert the color of the image
+ * i.e., (r, g, b) -> (255 - r, 255 - g, 255 - b)
+ */
 void CompWarping::invert()
 {
+    // Invert the color, change both the hue and the brightness
     for (int i = 0; i < data_->width(); ++i)
     {
         for (int j = 0; j < data_->height(); ++j)
@@ -40,6 +55,12 @@ void CompWarping::invert()
     // After change the image, we should reload the image data to the renderer
     update();
 }
+/**
+ * @brief Mirror the image
+ * Simply just swap the pixels
+ * @param is_horizontal Whether to mirror horizontally
+ * @param is_vertical Whether to mirror vertically
+ */
 void CompWarping::mirror(bool is_horizontal, bool is_vertical)
 {
     Image image_tmp(*data_);
@@ -91,6 +112,12 @@ void CompWarping::mirror(bool is_horizontal, bool is_vertical)
     // After change the image, we should reload the image data to the renderer
     update();
 }
+
+/**
+ * @brief Convert the image to gray scale
+ * i.e., (r, g, b) -> (gray, gray, gray), of which gray = (r + g + b) / 3
+ * Other algorithms: Gray = R*0.299 + G*0.587 + B*0.114
+ */
 void CompWarping::gray_scale()
 {
     for (int i = 0; i < data_->width(); ++i)
@@ -100,11 +127,18 @@ void CompWarping::gray_scale()
             const auto color = data_->get_pixel(i, j);
             uchar gray_value = (color[0] + color[1] + color[2]) / 3;
             data_->set_pixel(i, j, { gray_value, gray_value, gray_value });
+            // uchar gray_value = color[0] * 0.299 + color[1] * 0.587 + color[2]
+            // * 0.114; data_->set_pixel(i, j, { gray_value, gray_value,
+            // gray_value });
         }
     }
     // After change the image, we should reload the image data to the renderer
     update();
 }
+
+/**
+ * @brief Warp the image
+ */
 void CompWarping::warping()
 {
     // HW2_TODO: You should implement your own warping function that interpolate
@@ -143,21 +177,60 @@ void CompWarping::warping()
                 std::vector<unsigned char> pixel = data_->get_pixel(x, y);
                 warped_image.set_pixel(new_x, new_y, pixel);
             }
+            
+            // Another way: Inverse (x', y') -> (x, y)
+
+            // int width = data_->width();
+            // int height = data_->height();
+            // float center_x = width / 2.0f;
+            // float center_y = height / 2.0f;
+            // float dx = x - center_x;
+            // float dy = y - center_y;
+            // float distance = std::sqrt(dx * dx + dy * dy);
+
+            // float old_distance = distance * distance / 100;
+
+            // int old_x, old_y;
+            // if (distance == 0)
+            // {
+            //     old_x = static_cast<int>(center_x);
+            //     old_y = static_cast<int>(center_y);
+            // }
+            // else
+            // {
+            //     float ratio = old_distance / distance;
+            //     old_x = static_cast<int>(center_x + dx * ratio);
+            //     old_y = static_cast<int>(center_y + dy * ratio);
+            // }
+
+            // if (old_x >= 0 && old_x < data_->width() && old_y >= 0 && old_y <
+            // data_->height())
+            // {
+            //     std::vector<unsigned char> pixel = data_->get_pixel(old_x, old_y); 
+            //     warped_image.set_pixel(x, y, pixel);
+            // }
         }
     }
 
     *data_ = std::move(warped_image);
     update();
 }
+
 void CompWarping::restore()
 {
     *data_ = *back_up_;
     update();
 }
+
 void CompWarping::enable_selecting(bool flag)
 {
     flag_enable_selecting_points_ = flag;
 }
+
+/**
+ * @brief Select points for warping
+ * Drag the mouse to select the start and end points
+ */
 void CompWarping::select_points()
 {
     /// Invisible button over the canvas to capture mouse interactions.
@@ -181,7 +254,7 @@ void CompWarping::select_points()
     if (draw_status_)
     {
         end_ = ImVec2(io.MousePos.x - position_.x, io.MousePos.y - position_.y);
-        if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
+        if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))  // Drag finished
         {
             start_points_.push_back(start_);
             end_points_.push_back(end_);
@@ -208,12 +281,22 @@ void CompWarping::select_points()
         draw_list->AddCircleFilled(s, 4.0f, IM_COL32(0, 0, 255, 255));
     }
 }
+
 void CompWarping::init_selections()
 {
     start_points_.clear();
     end_points_.clear();
 }
 
+/**
+ * @brief A simple "fish-eye" warping function
+ * Use tramsformation r -> r' = sqrt(r) * 10, theta -> theta' = theta
+ * @param x The x coordinate of the pixel
+ * @param y The y coordinate of the pixel
+ * @param width The width of the image
+ * @param height The height of the image
+ * @return The new coordinate of the pixel
+ */
 std::pair<int, int>
 CompWarping::fisheye_warping(int x, int y, int width, int height)
 {

@@ -6,19 +6,27 @@
 
 namespace USTC_CG
 {
+
 ImageWarping::ImageWarping(const std::string& window_name) : Window(window_name)
 {
 }
+
 ImageWarping::~ImageWarping()
 {
 }
+
 void ImageWarping::draw()
 {
     draw_toolbar();
     if (flag_open_file_dialog_)
+    {
         draw_open_image_file_dialog();
-    if (flag_save_file_dialog_ && p_image_)
+    }
+    if (flag_save_file_dialog_ &&
+        p_image_)  // Only save the image when it is not empty
+    {
         draw_save_image_file_dialog();
+    }
 
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -28,12 +36,17 @@ void ImageWarping::draw()
             &flag_show_main_view_,
             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
                 ImGuiWindowFlags_NoBringToFrontOnFocus))
+    // Important Flag of NoBringToFrontOnFocus to avoid the popup window to be
+    // behind the main window
     {
         if (p_image_)
+        {
             draw_image();
+        }
         ImGui::End();
     }
 }
+
 void ImageWarping::draw_toolbar()
 {
     if (ImGui::BeginMainMenuBar())
@@ -84,6 +97,7 @@ void ImageWarping::draw_toolbar()
         ImGui::EndMainMenuBar();
     }
 }
+
 void ImageWarping::draw_image()
 {
     const auto& canvas_min = ImGui::GetCursorScreenPos();
@@ -96,17 +110,20 @@ void ImageWarping::draw_image()
     p_image_->set_position(pos);
     p_image_->draw();
 }
+
 void ImageWarping::draw_open_image_file_dialog()
 {
     IGFD::FileDialogConfig config;
     config.path = DATA_PATH;
     config.flags = ImGuiFileDialogFlags_Modal;
+    // Use Flag ImGuiFileDialogFlags_Modal to show popup window
     ImGuiFileDialog::Instance()->OpenDialog(
         "ChooseImageOpenFileDlg", "Choose Image File", ".png,.jpg", config);
-    ImVec2 main_size = ImGui::GetMainViewport()->WorkSize;
+    ImVec2 main_size = ImGui::GetMainViewport()->WorkSize; // Without bars
     ImVec2 dlg_size(main_size.x / 2, main_size.y / 2);
     if (ImGuiFileDialog::Instance()->Display(
             "ChooseImageOpenFileDlg", ImGuiWindowFlags_NoCollapse, dlg_size))
+    // Avoid collapse, Set size
     {
         if (ImGuiFileDialog::Instance()->IsOk())
         {
@@ -119,6 +136,7 @@ void ImageWarping::draw_open_image_file_dialog()
         flag_open_file_dialog_ = false;
     }
 }
+
 void ImageWarping::draw_save_image_file_dialog()
 {
     IGFD::FileDialogConfig config;

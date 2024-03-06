@@ -6,6 +6,8 @@
 
 namespace USTC_CG
 {
+
+// Image raw data class
 class Image
 {
    public:
@@ -126,9 +128,12 @@ class Image
             throw std::out_of_range("Pixel coordinates out of bounds");
         }
         // Allow 3 channel input when channels.size()==4 (RGB -> RGBA)
+        // In this case, leave the alpha channel unchanged
         size_t channels_reset = channels_;
         if (values.size() == 3 && static_cast<size_t>(channels_) == 4)
+        {
             channels_reset = 3;
+        }
         else if (values.size() != static_cast<size_t>(channels_))
         {
             throw std::invalid_argument(
