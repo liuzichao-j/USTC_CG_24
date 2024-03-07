@@ -85,8 +85,7 @@ void ImageWarping::draw_toolbar()
         if (ImGui::MenuItem("Warping") && p_image_)
         {
             p_image_->enable_selecting(false);
-            static_cast<WarpingIDW*>(p_image_.get())->warping();
-            // ((std::shared_ptr<WarpingIDW>)p_image_)->warping();
+            p_image_->warping();
             p_image_->init_selections();
         }
         // HW2_TODO: You can add more interactions for IDW, RBF, etc.

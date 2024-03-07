@@ -128,92 +128,13 @@ void CompWarping::gray_scale()
             uchar gray_value = (color[0] + color[1] + color[2]) / 3;
             data_->set_pixel(i, j, { gray_value, gray_value, gray_value });
             // uchar gray_value = color[0] * 0.299 + color[1] * 0.587 + color[2]
-            // * 0.114; data_->set_pixel(i, j, { gray_value, gray_value,
+            // * 0.114;
+
+            // data_->set_pixel(i, j, { gray_value, gray_value,
             // gray_value });
         }
     }
     // After change the image, we should reload the image data to the renderer
-    update();
-}
-
-/**
- * @brief Warp the image. Simple "fish-eye" warping. 
- */
-void CompWarping::warping()
-{
-    printf("Fish-eye warping\n");
-    // HW2_TODO: You should implement your own warping function that interpolate
-    // the selected points.
-    // You can design a class for such warping operations, utilizing the
-    // encapsulation, inheritance, and polymorphism features of C++. More files
-    // like "*.h", "*.cpp" can be added to this directory or anywhere you like.
-
-    // Create a new image to store the result
-    Image warped_image(*data_);
-    // Initialize the color of result image
-    for (int y = 0; y < data_->height(); ++y)
-    {
-        for (int x = 0; x < data_->width(); ++x)
-        {
-            warped_image.set_pixel(x, y, { 0, 0, 0 });
-        }
-    }
-
-    // Example: (simplified) "fish-eye" warping
-    // For each (x, y) from the input image, the "fish-eye" warping transfer it
-    // to (x', y') in the new image:
-    // Note: For this transformation ("fish-eye" warping), one can also
-    // calculate the inverse (x', y') -> (x, y) to fill in the "gaps".
-    for (int y = 0; y < data_->height(); ++y)
-    {
-        for (int x = 0; x < data_->width(); ++x)
-        {
-            // Apply warping function to (x, y), and we can get (x', y')
-            auto [new_x, new_y] =
-                fisheye_warping(x, y, data_->width(), data_->height());
-            // Copy the color from the original image to the result image
-            if (new_x >= 0 && new_x < data_->width() && new_y >= 0 &&
-                new_y < data_->height())
-            {
-                std::vector<unsigned char> pixel = data_->get_pixel(x, y);
-                warped_image.set_pixel(new_x, new_y, pixel);
-            }
-            
-            // Another way: Inverse (x', y') -> (x, y)
-
-            // int width = data_->width();
-            // int height = data_->height();
-            // float center_x = width / 2.0f;
-            // float center_y = height / 2.0f;
-            // float dx = x - center_x;
-            // float dy = y - center_y;
-            // float distance = std::sqrt(dx * dx + dy * dy);
-
-            // float old_distance = distance * distance / 100;
-
-            // int old_x, old_y;
-            // if (distance == 0)
-            // {
-            //     old_x = static_cast<int>(center_x);
-            //     old_y = static_cast<int>(center_y);
-            // }
-            // else
-            // {
-            //     float ratio = old_distance / distance;
-            //     old_x = static_cast<int>(center_x + dx * ratio);
-            //     old_y = static_cast<int>(center_y + dy * ratio);
-            // }
-
-            // if (old_x >= 0 && old_x < data_->width() && old_y >= 0 && old_y <
-            // data_->height())
-            // {
-            //     std::vector<unsigned char> pixel = data_->get_pixel(old_x, old_y); 
-            //     warped_image.set_pixel(x, y, pixel);
-            // }
-        }
-    }
-
-    *data_ = std::move(warped_image);
     update();
 }
 
@@ -287,38 +208,5 @@ void CompWarping::init_selections()
 {
     start_points_.clear();
     end_points_.clear();
-}
-
-/**
- * @brief A simple "fish-eye" warping function
- * Use tramsformation r -> r' = sqrt(r) * 10, theta -> theta' = theta
- * @param x The x coordinate of the pixel
- * @param y The y coordinate of the pixel
- * @param width The width of the image
- * @param height The height of the image
- * @return The new coordinate of the pixel
- */
-std::pair<int, int>
-CompWarping::fisheye_warping(int x, int y, int width, int height)
-{
-    float center_x = width / 2.0f;
-    float center_y = height / 2.0f;
-    float dx = x - center_x;
-    float dy = y - center_y;
-    float distance = std::sqrt(dx * dx + dy * dy);
-
-    // Simple non-linear transformation r -> r' = f(r)
-    float new_distance = std::sqrt(distance) * 10;
-
-    if (distance == 0)
-    {
-        return { static_cast<int>(center_x), static_cast<int>(center_y) };
-    }
-    // (x', y')
-    float ratio = new_distance / distance;
-    int new_x = static_cast<int>(center_x + dx * ratio);
-    int new_y = static_cast<int>(center_y + dy * ratio);
-
-    return { new_x, new_y };
 }
 }  // namespace USTC_CG

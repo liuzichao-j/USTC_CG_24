@@ -30,7 +30,7 @@ class WarpingIDW : public CompWarping
             }
         }
         // Apply warping function and return the result
-        warped_image = warping_idw(data_, start_points_, end_points_);
+        warping_idw(warped_image);
         *data_ = std::move(warped_image);
         update();
     }
@@ -38,14 +38,8 @@ class WarpingIDW : public CompWarping
    private:
     /**
      * @brief Inverse Distance Weighting (IDW) warping function.
-     * @param image The original image
-     * @param start_points The start points
-     * @param end_points The end points
      */
-    Image warping_idw(
-        const std::shared_ptr<Image>& image,
-        const std::vector<ImVec2>& start_points,
-        const std::vector<ImVec2>& end_points)
+    Image warping_idw(Image& warped_image)
     {
         /**
          * Given f(p_i) = (q_i), Use f(p) = Sum_i (w_i(p) * f_i(p)).
@@ -95,18 +89,7 @@ class WarpingIDW : public CompWarping
          * Having D_i, we can calculate f(p), which is the result of warping.
          */
 
-        // Create a new image to store the result
-        Image warped_image(*image);
-        // Initialize the color of result image
-        for (int y = 0; y < image->height(); ++y)
-        {
-            for (int x = 0; x < image->width(); ++x)
-            {
-                warped_image.set_pixel(x, y, { 0, 0, 0 });
-            }
-        }
-
-        int n = (int) start_points.size();
+        int n = (int) start_points_.size();
         double mu = 2;
 
         // Calculate the distance between start points (p_i, p_j)
@@ -116,8 +99,8 @@ class WarpingIDW : public CompWarping
             for (int j = 0; j < n; ++j)
             {
                 distance_matrix(i, j) = std::sqrt(
-                    std::pow(start_points[i].x - start_points[j].x, 2) +
-                    std::pow(start_points[i].y - start_points[j].y, 2));
+                    std::pow(start_points_[i].x - start_points_[j].x, 2) +
+                    std::pow(start_points_[i].y - start_points_[j].y, 2));
             }
         }
 
@@ -141,37 +124,36 @@ class WarpingIDW : public CompWarping
         }
 
         // Calculate the D matrix
-        std::vector<Eigen::MatrixXd> d_matrix;
+        std::vector<Eigen::MatrixXd> d_matrix(n, Eigen::MatrixXd::Zero(2, 2));
         for (int i = 0; i < n; i++)
         {
             // Calculate D_i matrix by solving linear equations of four
             // variables, D_i_11, D_i_12, D_i_21, D_i_22
-            d_matrix[i] = Eigen::MatrixXd::Zero(2, 2);
 
             // Calculate A matrix
             Eigen::MatrixXd A = Eigen::MatrixXd::Zero(4, 4);
             for (int j = 0; j < n; j++)
             {
                 A(0, 0) += sigma_matrix(i, j) *
-                           std::pow(start_points[j].x - start_points[i].x, 2);
+                           std::pow(start_points_[j].x - start_points_[i].x, 2);
                 A(0, 1) += sigma_matrix(i, j) *
-                           (start_points[j].x - start_points[i].x) *
-                           (start_points[j].y - start_points[i].y);
+                           (start_points_[j].x - start_points_[i].x) *
+                           (start_points_[j].y - start_points_[i].y);
                 A(1, 0) += sigma_matrix(i, j) *
-                           (start_points[j].x - start_points[i].x) *
-                           (start_points[j].y - start_points[i].y);
+                           (start_points_[j].x - start_points_[i].x) *
+                           (start_points_[j].y - start_points_[i].y);
                 A(1, 1) += sigma_matrix(i, j) *
-                           std::pow(start_points[j].y - start_points[i].y, 2);
+                           std::pow(start_points_[j].y - start_points_[i].y, 2);
                 A(2, 2) += sigma_matrix(i, j) *
-                           std::pow(start_points[j].x - start_points[i].x, 2);
+                           std::pow(start_points_[j].x - start_points_[i].x, 2);
                 A(2, 3) += sigma_matrix(i, j) *
-                           (start_points[j].x - start_points[i].x) *
-                           (start_points[j].y - start_points[i].y);
+                           (start_points_[j].x - start_points_[i].x) *
+                           (start_points_[j].y - start_points_[i].y);
                 A(3, 2) += sigma_matrix(i, j) *
-                           (start_points[j].x - start_points[i].x) *
-                           (start_points[j].y - start_points[i].y);
+                           (start_points_[j].x - start_points_[i].x) *
+                           (start_points_[j].y - start_points_[i].y);
                 A(3, 3) += sigma_matrix(i, j) *
-                           std::pow(start_points[j].y - start_points[i].y, 2);
+                           std::pow(start_points_[j].y - start_points_[i].y, 2);
             }
 
             // Calculate b matrix
@@ -179,17 +161,17 @@ class WarpingIDW : public CompWarping
             for (int j = 0; j < n; j++)
             {
                 b(0) += sigma_matrix(i, j) *
-                        (start_points[j].x - start_points[i].x) *
-                        (end_points[j].x - end_points[i].x);
+                        (start_points_[j].x - start_points_[i].x) *
+                        (end_points_[j].x - end_points_[i].x);
                 b(1) += sigma_matrix(i, j) *
-                        (start_points[j].y - start_points[i].y) *
-                        (end_points[j].x - end_points[i].x);
+                        (start_points_[j].y - start_points_[i].y) *
+                        (end_points_[j].x - end_points_[i].x);
                 b(2) += sigma_matrix(i, j) *
-                        (start_points[j].x - start_points[i].x) *
-                        (end_points[j].y - end_points[i].y);
+                        (start_points_[j].x - start_points_[i].x) *
+                        (end_points_[j].y - end_points_[i].y);
                 b(3) += sigma_matrix(i, j) *
-                        (start_points[j].y - start_points[i].y) *
-                        (end_points[j].y - end_points[i].y);
+                        (start_points_[j].y - start_points_[i].y) *
+                        (end_points_[j].y - end_points_[i].y);
             }
 
             // Solve the linear equations A * x = b
@@ -203,9 +185,9 @@ class WarpingIDW : public CompWarping
         }
 
         // Got D matrix, calculate f(p) for each pixel
-        for (int old_x = 0; old_x < image->width(); old_x++)
+        for (int old_x = 0; old_x < data_->width(); old_x++)
         {
-            for (int old_y = 0; old_y < image->height(); old_y++)
+            for (int old_y = 0; old_y < data_->height(); old_y++)
             {
                 int new_x = 0;
                 int new_y = 0;
@@ -218,21 +200,21 @@ class WarpingIDW : public CompWarping
                     double sigmasum = 0;
                     for (int j = 0; j < n; j++)
                     {
-                        if (old_x != start_points[j].x ||
-                            old_y != start_points[j].y)
+                        if (old_x != start_points_[j].x ||
+                            old_y != start_points_[j].y)
                         {
                             sigmasum +=
                                 1 /
                                 std::pow(
                                     std::sqrt(
-                                        std::pow(old_x - start_points[j].x, 2) +
-                                        std::pow(old_y - start_points[j].y, 2)),
+                                        std::pow(old_x - start_points_[j].x, 2) +
+                                        std::pow(old_y - start_points_[j].y, 2)),
                                     mu);
                         }
                     }
                     double w;
-                    if (old_x == start_points[i].x &&
-                        old_y == start_points[i].y)
+                    if (old_x == start_points_[i].x &&
+                        old_y == start_points_[i].y)
                     {
                         w = 1;
                     }
@@ -241,30 +223,30 @@ class WarpingIDW : public CompWarping
                         w = 1 /
                             std::pow(
                                 std::sqrt(
-                                    std::pow(old_x - start_points[i].x, 2) +
-                                    std::pow(old_y - start_points[i].y, 2)),
+                                    std::pow(old_x - start_points_[i].x, 2) +
+                                    std::pow(old_y - start_points_[i].y, 2)),
                                 mu) /
                             sigmasum;
                     }
 
                     // Calculate f_i(p) = q_i + D_i(p - p_i) and sum them up
-                    new_x += (int)(w * (end_points[i].x +
+                    new_x += (int)(w * (end_points_[i].x +
                                         d_matrix[i](0, 0) *
-                                            (old_x - start_points[i].x) +
+                                            (old_x - start_points_[i].x) +
                                         d_matrix[i](0, 1) *
-                                            (old_y - start_points[i].y)));
-                    new_y += (int)(w * (end_points[i].y +
+                                            (old_y - start_points_[i].y)));
+                    new_y += (int)(w * (end_points_[i].y +
                                         d_matrix[i](1, 0) *
-                                            (old_x - start_points[i].x) +
+                                            (old_x - start_points_[i].x) +
                                         d_matrix[i](1, 1) *
-                                            (old_y - start_points[i].y)));
+                                            (old_y - start_points_[i].y)));
                 }
                 // Set the color of the new pixel
-                if (new_x >= 0 && new_x < image->width() && new_y >= 0 &&
-                    new_y < image->height())
+                if (new_x >= 0 && new_x < data_->width() && new_y >= 0 &&
+                    new_y < data_->height())
                 {
                     warped_image.set_pixel(
-                        new_x, new_y, image->get_pixel(old_x, old_y));
+                        new_x, new_y, data_->get_pixel(old_x, old_y));
                 }
             }
         }
@@ -274,8 +256,8 @@ class WarpingIDW : public CompWarping
 
     Image warping_idw_inverse(
         const std::shared_ptr<Image>& image,
-        const std::vector<ImVec2>& start_points,
-        const std::vector<ImVec2>& end_points)
+        const std::vector<ImVec2>& start_points_,
+        const std::vector<ImVec2>& end_points_)
     {
         // Create a new image to store the result
         Image warped_image(*image);
@@ -288,7 +270,7 @@ class WarpingIDW : public CompWarping
             }
         }
 
-        int n = (int) start_points.size();
+        int n = (int) start_points_.size();
         double mu = 2;
 
         // Calculate the distance between start points (p_i, p_j)
@@ -298,8 +280,8 @@ class WarpingIDW : public CompWarping
             for (int j = 0; j < n; ++j)
             {
                 distance_matrix(i, j) = std::sqrt(
-                    std::pow(start_points[i].x - start_points[j].x, 2) +
-                    std::pow(start_points[i].y - start_points[j].y, 2));
+                    std::pow(start_points_[i].x - start_points_[j].x, 2) +
+                    std::pow(start_points_[i].y - start_points_[j].y, 2));
             }
         }
 
@@ -335,25 +317,25 @@ class WarpingIDW : public CompWarping
             for (int j = 0; j < n; j++)
             {
                 A(0, 0) += sigma_matrix(i, j) *
-                           std::pow(start_points[j].x - start_points[i].x, 2);
+                           std::pow(start_points_[j].x - start_points_[i].x, 2);
                 A(0, 1) += sigma_matrix(i, j) *
-                           (start_points[j].x - start_points[i].x) *
-                           (start_points[j].y - start_points[i].y);
+                           (start_points_[j].x - start_points_[i].x) *
+                           (start_points_[j].y - start_points_[i].y);
                 A(1, 0) += sigma_matrix(i, j) *
-                           (start_points[j].x - start_points[i].x) *
-                           (start_points[j].y - start_points[i].y);
+                           (start_points_[j].x - start_points_[i].x) *
+                           (start_points_[j].y - start_points_[i].y);
                 A(1, 1) += sigma_matrix(i, j) *
-                           std::pow(start_points[j].y - start_points[i].y, 2);
+                           std::pow(start_points_[j].y - start_points_[i].y, 2);
                 A(2, 2) += sigma_matrix(i, j) *
-                           std::pow(start_points[j].x - start_points[i].x, 2);
+                           std::pow(start_points_[j].x - start_points_[i].x, 2);
                 A(2, 3) += sigma_matrix(i, j) *
-                           (start_points[j].x - start_points[i].x) *
-                           (start_points[j].y - start_points[i].y);
+                           (start_points_[j].x - start_points_[i].x) *
+                           (start_points_[j].y - start_points_[i].y);
                 A(3, 2) += sigma_matrix(i, j) *
-                           (start_points[j].x - start_points[i].x) *
-                           (start_points[j].y - start_points[i].y);
+                           (start_points_[j].x - start_points_[i].x) *
+                           (start_points_[j].y - start_points_[i].y);
                 A(3, 3) += sigma_matrix(i, j) *
-                           std::pow(start_points[j].y - start_points[i].y, 2);
+                           std::pow(start_points_[j].y - start_points_[i].y, 2);
             }
 
             // Calculate b matrix
@@ -361,17 +343,17 @@ class WarpingIDW : public CompWarping
             for (int j = 0; j < n; j++)
             {
                 b(0) += sigma_matrix(i, j) *
-                        (start_points[j].x - start_points[i].x) *
-                        (end_points[j].x - end_points[i].x);
+                        (start_points_[j].x - start_points_[i].x) *
+                        (end_points_[j].x - end_points_[i].x);
                 b(1) += sigma_matrix(i, j) *
-                        (start_points[j].y - start_points[i].y) *
-                        (end_points[j].x - end_points[i].x);
+                        (start_points_[j].y - start_points_[i].y) *
+                        (end_points_[j].x - end_points_[i].x);
                 b(2) += sigma_matrix(i, j) *
-                        (start_points[j].x - start_points[i].x) *
-                        (end_points[j].y - end_points[i].y);
+                        (start_points_[j].x - start_points_[i].x) *
+                        (end_points_[j].y - end_points_[i].y);
                 b(3) += sigma_matrix(i, j) *
-                        (start_points[j].y - start_points[i].y) *
-                        (end_points[j].y - end_points[i].y);
+                        (start_points_[j].y - start_points_[i].y) *
+                        (end_points_[j].y - end_points_[i].y);
             }
 
             // Solve the linear equations A * x = b
@@ -400,21 +382,21 @@ class WarpingIDW : public CompWarping
                     double sigmasum = 0;
                     for (int j = 0; j < n; j++)
                     {
-                        if (old_x != start_points[j].x ||
-                            old_y != start_points[j].y)
+                        if (old_x != start_points_[j].x ||
+                            old_y != start_points_[j].y)
                         {
                             sigmasum +=
                                 1 /
                                 std::pow(
                                     std::sqrt(
-                                        std::pow(old_x - start_points[j].x, 2) +
-                                        std::pow(old_y - start_points[j].y, 2)),
+                                        std::pow(old_x - start_points_[j].x, 2) +
+                                        std::pow(old_y - start_points_[j].y, 2)),
                                     mu);
                         }
                     }
                     double w;
-                    if (old_x == start_points[i].x &&
-                        old_y == start_points[i].y)
+                    if (old_x == start_points_[i].x &&
+                        old_y == start_points_[i].y)
                     {
                         w = 1;
                     }
@@ -423,21 +405,21 @@ class WarpingIDW : public CompWarping
                         w = 1 /
                             std::pow(
                                 std::sqrt(
-                                    std::pow(old_x - start_points[i].x, 2) +
-                                    std::pow(old_y - start_points[i].y, 2)),
+                                    std::pow(old_x - start_points_[i].x, 2) +
+                                    std::pow(old_y - start_points_[i].y, 2)),
                                 mu) /
                             sigmasum;
                     }
 
                     // Calculate f_i(p) = q_i + D_i(p - p_i) and sum them up
                     new_x +=
-                        (int) (w * (end_points[i].x +
-                             d_matrix[i](0, 0) * (old_x - start_points[i].x) +
-                             d_matrix[i](0, 1) * (old_y - start_points[i].y)));
+                        (int) (w * (end_points_[i].x +
+                             d_matrix[i](0, 0) * (old_x - start_points_[i].x) +
+                             d_matrix[i](0, 1) * (old_y - start_points_[i].y)));
                     new_y +=
-                        (int) (w * (end_points[i].y +
-                             d_matrix[i](1, 0) * (old_x - start_points[i].x) +
-                             d_matrix[i](1, 1) * (old_y - start_points[i].y)));
+                        (int) (w * (end_points_[i].y +
+                             d_matrix[i](1, 0) * (old_x - start_points_[i].x) +
+                             d_matrix[i](1, 1) * (old_y - start_points_[i].y)));
                 }
                 // Set the color of the new pixel
                 if (new_x >= 0 && new_x < image->width() && new_y >= 0 &&

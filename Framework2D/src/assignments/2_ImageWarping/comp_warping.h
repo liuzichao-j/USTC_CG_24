@@ -17,7 +17,13 @@ class CompWarping : public ImageEditor
     void invert();
     void mirror(bool is_horizontal, bool is_vertical);
     void gray_scale();
-    void warping();
+
+    // HW2_TODO: You should implement your own warping function that interpolate
+    // the selected points.
+    // You can design a class for such warping operations, utilizing the
+    // encapsulation, inheritance, and polymorphism features of C++. More files
+    // like "*.h", "*.cpp" can be added to this directory or anywhere you like.
+    virtual void warping(bool Inverse_Flag = false) = 0;
     void restore();
 
     // Point selecting interaction
@@ -39,10 +45,6 @@ class CompWarping : public ImageEditor
     ImVec2 start_, end_;
     bool flag_enable_selecting_points_ = false;
     bool draw_status_ = false;
-
-   private:
-    // A simple "fish-eye" warping function
-    std::pair<int, int> fisheye_warping(int x, int y, int width, int height);
 };
 
 }  // namespace USTC_CG
