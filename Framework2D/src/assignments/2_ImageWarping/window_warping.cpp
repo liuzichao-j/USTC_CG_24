@@ -85,7 +85,8 @@ void ImageWarping::draw_toolbar()
         if (ImGui::MenuItem("Warping") && p_image_)
         {
             p_image_->enable_selecting(false);
-            p_image_->warping();
+            static_cast<WarpingIDW*>(p_image_.get())->warping();
+            // ((std::shared_ptr<WarpingIDW>)p_image_)->warping();
             p_image_->init_selections();
         }
         // HW2_TODO: You can add more interactions for IDW, RBF, etc.
@@ -119,7 +120,7 @@ void ImageWarping::draw_open_image_file_dialog()
     // Use Flag ImGuiFileDialogFlags_Modal to show popup window
     ImGuiFileDialog::Instance()->OpenDialog(
         "ChooseImageOpenFileDlg", "Choose Image File", ".png,.jpg", config);
-    ImVec2 main_size = ImGui::GetMainViewport()->WorkSize; // Without bars
+    ImVec2 main_size = ImGui::GetMainViewport()->WorkSize;  // Without bars
     ImVec2 dlg_size(main_size.x / 2, main_size.y / 2);
     if (ImGuiFileDialog::Instance()->Display(
             "ChooseImageOpenFileDlg", ImGuiWindowFlags_NoCollapse, dlg_size))
@@ -130,7 +131,11 @@ void ImageWarping::draw_open_image_file_dialog()
             std::string filePathName =
                 ImGuiFileDialog::Instance()->GetFilePathName();
             std::string label = filePathName;
-            p_image_ = std::make_shared<CompWarping>(label, filePathName);
+            // GUIDE: Change the following line to Change warping algorithm
+            // CompWarping: fish-eye
+            // WarpingIDW: IDW
+            // WarpingRBF: RBF
+            p_image_ = std::make_shared<WarpingIDW>(label, filePathName);
         }
         ImGuiFileDialog::Instance()->Close();
         flag_open_file_dialog_ = false;

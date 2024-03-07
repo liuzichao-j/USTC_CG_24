@@ -25,11 +25,16 @@ class CompWarping : public ImageEditor
     void select_points();
     void init_selections();
 
+   protected:
+    // Set as protected to let Child Class have access to start_points_ and
+    // end_points_.
+
+    // The selected point couples for image warping
+    std::vector<ImVec2> start_points_, end_points_;
+
    private:
     // Store the original image data
     std::shared_ptr<Image> back_up_;
-    // The selected point couples for image warping
-    std::vector<ImVec2> start_points_, end_points_;
 
     ImVec2 start_, end_;
     bool flag_enable_selecting_points_ = false;

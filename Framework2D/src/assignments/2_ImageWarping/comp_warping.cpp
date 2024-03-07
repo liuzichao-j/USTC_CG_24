@@ -137,10 +137,11 @@ void CompWarping::gray_scale()
 }
 
 /**
- * @brief Warp the image
+ * @brief Warp the image. Simple "fish-eye" warping. 
  */
 void CompWarping::warping()
 {
+    printf("Fish-eye warping\n");
     // HW2_TODO: You should implement your own warping function that interpolate
     // the selected points.
     // You can design a class for such warping operations, utilizing the
