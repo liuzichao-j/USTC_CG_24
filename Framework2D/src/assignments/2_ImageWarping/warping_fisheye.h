@@ -2,53 +2,32 @@
 
 #include <cmath>
 
-#include "comp_warping.h"
+#include "warping.h"
 
 namespace USTC_CG
 {
-class WarpingFishEye : public CompWarping
+class WarpingFishEye : public Warping
 {
    public:
-    explicit WarpingFishEye(
-        const std::string& label,
-        const std::string& filename)
-        : CompWarping(label, filename)
-    {
-    }
+    WarpingFishEye() = default;
     virtual ~WarpingFishEye() noexcept = default;
 
     /**
-     * @brief Warp the image.
+     * @brief Warp the image using the "fish-eye" warping function.
      * Inverse warping calculates where the pixel in result image comes from in
      * the original image. It is used to fill in the "gaps" in the result image.
-     * @param Inverse_Flag Whether to use the inverse warping function.
-     */
-    void warping(bool Inverse_Flag = false) override
-    {
-        // Create a new image to store the result
-        Image warped_image(*data_);
-        // Initialize the color of result image
-        for (int y = 0; y < data_->height(); ++y)
-        {
-            for (int x = 0; x < data_->width(); ++x)
-            {
-                warped_image.set_pixel(x, y, { 0, 0, 0 });
-            }
-        }
-        // Apply warping function and return the result
-        warping_fisheye(warped_image, Inverse_Flag);
-        *data_ = std::move(warped_image);
-        update();
-    }
-
-   private:
-    /**
-     * @brief Apply "fish-eye" warping to the image.
-     * Use resources from outside the function. 
+     * @param data_ The original image data.
      * @param warped_image The result image.
+     * @param start_points The start points for warping.
+     * @param end_points The end points for warping.
      * @param Inverse_Flag Whether to use the inverse warping function.
      */
-    Image warping_fisheye(Image& warped_image, bool Inverse_Flag = false)
+    void warping(
+        std::shared_ptr<Image> &data_,
+        Image &warped_image,
+        std::vector<ImVec2> &start_points,
+        std::vector<ImVec2> &end_points,
+        bool Inverse_Flag = false) override
     {
         // Example: (simplified) "fish-eye" warping
         // For each (x, y) from the input image, the "fish-eye" warping transfer

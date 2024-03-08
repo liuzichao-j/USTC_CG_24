@@ -4,7 +4,6 @@
 
 #include "view/window.h"
 #include "comp_warping.h"
-#include "warpingidw.h"
 
 namespace USTC_CG
 {

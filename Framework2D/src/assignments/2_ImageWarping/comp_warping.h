@@ -1,6 +1,7 @@
 #pragma once
 
 #include "view/comp_image.h"
+#include "warping.h"
 
 namespace USTC_CG
 {
@@ -18,12 +19,7 @@ class CompWarping : public ImageEditor
     void mirror(bool is_horizontal, bool is_vertical);
     void gray_scale();
 
-    // HW2_TODO: You should implement your own warping function that interpolate
-    // the selected points.
-    // You can design a class for such warping operations, utilizing the
-    // encapsulation, inheritance, and polymorphism features of C++. More files
-    // like "*.h", "*.cpp" can be added to this directory or anywhere you like.
-    virtual void warping(bool Inverse_Flag = false) = 0;
+    void warping();
     void restore();
 
     // Point selecting interaction
@@ -31,16 +27,20 @@ class CompWarping : public ImageEditor
     void select_points();
     void init_selections();
 
-   protected:
-    // Set as protected to let Child Class have access to start_points_ and
-    // end_points_.
+    // Set warping method
+    void set_warping_method(int method);
 
-    // The selected point couples for image warping
-    std::vector<ImVec2> start_points_, end_points_;
+    // Whether to use the inverse warping function, default is true, for better
+    // warping effect
+    bool inverse_flag = true;
 
    private:
     // Store the original image data
     std::shared_ptr<Image> back_up_;
+    // The selected point couples for image warping
+    std::vector<ImVec2> start_points_, end_points_;
+    // Warping element for implementation of warping functions
+    std::shared_ptr<Warping> warping_;
 
     ImVec2 start_, end_;
     bool flag_enable_selecting_points_ = false;

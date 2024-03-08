@@ -2,6 +2,10 @@
 
 #include <cmath>
 
+#include "warping_fisheye.h"
+#include "warping_idw.h"
+#include "warping_rbf.h"
+
 namespace USTC_CG
 {
 using uchar = unsigned char;
@@ -138,10 +142,57 @@ void CompWarping::gray_scale()
     update();
 }
 
+/**
+ * @brief Set the warping method by defining the category of warping_
+ * @param method The method to set, 0 for FishEye, 1 for IDW, 2 for RBF
+ */
+void CompWarping::set_warping_method(int method)
+{
+    switch (method)
+    {
+        case 1: warping_ = std::make_shared<WarpingIDW>(); break;
+        case 2: warping_ = std::make_shared<WarpingRBF>(); break;
+        default: warping_ = std::make_shared<WarpingFishEye>(); break;
+    }
+}
+
+/**
+ * @brief Apply warping function to the image
+ * @param Inverse_Flag Whether to use the inverse warping function
+ */
+void CompWarping::warping()
+{
+    // HW2_TODO: You should implement your own warping function that interpolate
+    // the selected points.
+    // You can design a class for such warping operations, utilizing the
+    // encapsulation, inheritance, and polymorphism features of C++. More files
+    // like "*.h", "*.cpp" can be added to this directory or anywhere you like.
+
+    // Create a new image to store the result
+    Image warped_image(*data_);
+    // Initialize the color of result image
+    for (int y = 0; y < data_->height(); ++y)
+    {
+        for (int x = 0; x < data_->width(); ++x)
+        {
+            warped_image.set_pixel(x, y, { 0, 0, 0 });
+        }
+    }
+    // Apply warping function and store the result in warped_image
+    warping_->warping(
+        data_, warped_image, start_points_, end_points_, inverse_flag);
+    *data_ = std::move(warped_image);
+    update();
+}
+
 void CompWarping::restore()
 {
     *data_ = *back_up_;
     update();
+    if(start_points_.size() > 0)
+    {
+        enable_selecting(true);
+    }
 }
 
 void CompWarping::enable_selecting(bool flag)

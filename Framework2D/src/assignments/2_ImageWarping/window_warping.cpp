@@ -79,20 +79,61 @@ void ImageWarping::draw_toolbar()
         ImGui::Separator();
         if (ImGui::MenuItem("Select Points") && p_image_)
         {
-            p_image_->init_selections();
+            // p_image_->init_selections();
             p_image_->enable_selecting(true);
         }
-        if (ImGui::MenuItem("Warping") && p_image_)
+        if (ImGui::MenuItem("Reset Points") && p_image_)
         {
-            p_image_->enable_selecting(false);
-            p_image_->warping();
             p_image_->init_selections();
         }
-        // HW2_TODO: You can add more interactions for IDW, RBF, etc.
+        if (ImGui::BeginMenu("Warping"))
+        {
+            // HW2_TODO: You can add more interactions for IDW, RBF, etc.
+            if (ImGui::MenuItem("Warping-FishEye") && p_image_)
+            {
+                p_image_->set_warping_method(0);
+                p_image_->enable_selecting(false);
+                p_image_->warping();
+                p_image_->init_selections();
+            }
+            if (ImGui::MenuItem("Warping-IDW") && p_image_)
+            {
+                p_image_->set_warping_method(1);
+                p_image_->enable_selecting(false);
+                p_image_->warping();
+                // p_image_->init_selections();
+            }
+            if (ImGui::MenuItem("Warping-RBF") && p_image_)
+            {
+                p_image_->set_warping_method(2);
+                p_image_->enable_selecting(false);
+                p_image_->warping();
+                p_image_->init_selections();
+            }
+            ImGui::EndMenu();
+        }
         ImGui::Separator();
         if (ImGui::MenuItem("Restore") && p_image_)
         {
             p_image_->restore();
+        }
+        ImGui::Separator();
+        if (p_image_)
+        {
+            if (p_image_->inverse_flag)
+            {
+                if (ImGui::MenuItem("Normal Warping"))
+                {
+                    p_image_->inverse_flag = false;
+                }
+            }
+            else
+            {
+                if (ImGui::MenuItem("Inverse Warping"))
+                {
+                    p_image_->inverse_flag = true;
+                }
+            }
         }
         ImGui::EndMainMenuBar();
     }
@@ -130,11 +171,7 @@ void ImageWarping::draw_open_image_file_dialog()
             std::string filePathName =
                 ImGuiFileDialog::Instance()->GetFilePathName();
             std::string label = filePathName;
-            // GUIDE: Change the following line to Change warping algorithm
-            // CompWarping: fish-eye
-            // WarpingIDW: IDW
-            // WarpingRBF: RBF
-            p_image_ = std::make_shared<WarpingIDW>(label, filePathName);
+            p_image_ = std::make_shared<CompWarping>(label, filePathName);
         }
         ImGuiFileDialog::Instance()->Close();
         flag_open_file_dialog_ = false;
