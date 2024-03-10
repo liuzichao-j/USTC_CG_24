@@ -101,14 +101,15 @@ void ImageWarping::draw_toolbar()
                 p_image_->enable_selecting(false);
                 p_image_->warping();
             }
+            ImGui::Separator();
             // HW2_TODO: You can add more interactions for IDW, RBF, etc.
-            if (ImGui::MenuItem("Warping-IDW") && p_image_)
+            if (ImGui::MenuItem("IDW") && p_image_)
             {
                 p_image_->set_warping_method(1);
                 p_image_->enable_selecting(false);
                 p_image_->warping();
             }
-            if (ImGui::MenuItem("Warping-RBF") && p_image_)
+            if (ImGui::MenuItem("RBF") && p_image_)
             {
                 p_image_->set_warping_method(2);
                 p_image_->enable_selecting(false);
@@ -124,10 +125,10 @@ void ImageWarping::draw_toolbar()
         ImGui::Separator();
         if (p_image_)
         {
-            ImGui::Checkbox("Inverse Warping", &p_image_->inverse_flag);
+            ImGui::Checkbox("Fix gaps (Inverse Warping)", &p_image_->inverse_flag);
             if (p_image_->inverse_flag == false)
             {
-                ImGui::Checkbox("Fix gaps", &p_image_->fixgap_flag);
+                ImGui::Checkbox("Fix gaps (ANN, very slow)", &p_image_->fixgap_flag);
             }
             else
             {

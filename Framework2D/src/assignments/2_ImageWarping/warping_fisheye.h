@@ -39,7 +39,7 @@ class WarpingFishEye : public Warping
         // ("fish-eye" warping), one can also calculate the inverse (x', y') ->
         // (x, y) to fill in the "gaps".
 
-        // Fix the gap using ann method
+        // Fix the gap using ann method, proves to be very slow
         Annoy::AnnoyIndex<
             int,
             float,
@@ -165,9 +165,10 @@ class WarpingFishEye : public Warping
                         if (distances[l] < max_distance)
                         {
                             // Within the max distance, count the color
-                            std::vector<unsigned char> pixel = data_->get_pixel(
-                                closest_points[l] % data_->width(),
-                                closest_points[l] / data_->width());
+                            std::vector<unsigned char> pixel =
+                                warped_image.get_pixel(
+                                    closest_points[l] % data_->width(),
+                                    closest_points[l] / data_->width());
                             bool flag = false;
                             for (int m = 0; m < cnt.size(); m++)
                             {
@@ -215,6 +216,8 @@ class WarpingFishEye : public Warping
                 }
             }
         }
+        index.unbuild();
+        index.reinitialize();
     }
 };
 }  // namespace USTC_CG

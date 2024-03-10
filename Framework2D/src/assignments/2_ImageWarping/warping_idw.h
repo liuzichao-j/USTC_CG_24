@@ -227,6 +227,16 @@ class WarpingIDW : public Warping
         // picture. This shows the difference between normal and inverse way.
         else
         {
+            // Fix the gap by ann method
+            Annoy::AnnoyIndex<
+                int,
+                float,
+                Annoy::Euclidean,
+                Annoy::Kiss32Random,
+                Annoy::AnnoyIndexSingleThreadedBuildPolicy>
+                index(2);
+            int indexcnt = 0;
+
             // Calculate the distance between start points (p_i, p_j)
             Eigen::MatrixXd distance_matrix(n, n);
             for (int i = 0; i < n; ++i)
@@ -329,8 +339,8 @@ class WarpingIDW : public Warping
             {
                 for (int old_y = 0; old_y < data_->height(); old_y++)
                 {
-                    int new_x = 0;
-                    int new_y = 0;
+                    double new_x = 0;
+                    double new_y = 0;
 
                     // Answer shows as sum of w_i(p) * f_i(p)
                     for (int i = 0; i < n; i++)
@@ -372,16 +382,16 @@ class WarpingIDW : public Warping
                         }
 
                         // Calculate f_i(p) = q_i + D_i(p - p_i) and sum them up
-                        new_x += (int)(w * (end_points[i].x +
-                                            d_matrix[i](0, 0) *
-                                                (old_x - start_points[i].x) +
-                                            d_matrix[i](0, 1) *
-                                                (old_y - start_points[i].y)));
-                        new_y += (int)(w * (end_points[i].y +
-                                            d_matrix[i](1, 0) *
-                                                (old_x - start_points[i].x) +
-                                            d_matrix[i](1, 1) *
-                                                (old_y - start_points[i].y)));
+                        new_x +=
+                            w *
+                            (end_points[i].x +
+                             d_matrix[i](0, 0) * (old_x - start_points[i].x) +
+                             d_matrix[i](0, 1) * (old_y - start_points[i].y));
+                        new_y +=
+                            w *
+                            (end_points[i].y +
+                             d_matrix[i](1, 0) * (old_x - start_points[i].x) +
+                             d_matrix[i](1, 1) * (old_y - start_points[i].y));
                     }
                     // Set the color of the new pixel
                     if (Inverse_Flag == false)
@@ -390,7 +400,17 @@ class WarpingIDW : public Warping
                             new_y >= 0 && new_y < data_->height())
                         {
                             warped_image.set_pixel(
-                                new_x, new_y, data_->get_pixel(old_x, old_y));
+                                (int)new_x,
+                                (int)new_y,
+                                data_->get_pixel(old_x, old_y));
+                            if (Fixgap_Flag == true)
+                            {
+                                float p[2] = { (int)new_x, (int)new_y };
+                                index.add_item(
+                                    (int)new_y * data_->width() + (int)new_x,
+                                    p);
+                                indexcnt++;
+                            }
                         }
                     }
                     else
@@ -401,11 +421,132 @@ class WarpingIDW : public Warping
                             // The difference of inverse: calculate what pixel
                             // is the new one originated from.
                             warped_image.set_pixel(
-                                old_x, old_y, data_->get_pixel(new_x, new_y));
+                                old_x,
+                                old_y,
+                                data_->get_pixel((int)new_x, (int)new_y));
                         }
                     }
                 }
             }
+
+            // Fix the gap by ann method
+            if (Fixgap_Flag == true && indexcnt)
+            {
+                index.build((int)log2(indexcnt));
+                int k = 3;  // search k nearest points
+                float oldmindis = distance_matrix(0, 1), newmaxdis = 0;
+                for (int i = 0; i < n; i++)
+                {
+                    for (int j = 0; j < n; j++)
+                    {
+                        if (i != j && distance_matrix(i, j) < oldmindis)
+                        {
+                            oldmindis = distance_matrix(i, j);
+                        }
+                    }
+                }
+                for (int i = 0; i < n; i++)
+                {
+                    for (int j = 0; j < n; j++)
+                    {
+                        float dis = std::sqrt(
+                            std::pow(end_points[i].x - end_points[j].x, 2) +
+                            std::pow(end_points[i].y - end_points[j].y, 2));
+                        if (dis > newmaxdis)
+                        {
+                            newmaxdis = dis;
+                        }
+                    }
+                }
+                float max_distance = newmaxdis / oldmindis;
+                // max distance to search, avoid paint at non-sight area
+                // choose max distance as the ratio of expansion
+                std::vector<int> closest_points;
+                std::vector<float> distances;
+                for (int i = 0; i < data_->width(); i++)
+                {
+                    for (int j = 0; j < data_->height(); j++)
+                    {
+                        if (warped_image.get_pixel(i, j)[0] != 0 ||
+                            warped_image.get_pixel(i, j)[1] != 0 ||
+                            warped_image.get_pixel(i, j)[2] != 0)
+                        {
+                            // Painted, continue
+                            continue;
+                        }
+
+                        float p[2] = { (float)i, (float)j };
+                        index.get_nns_by_vector(
+                            p, k, -1, &closest_points, &distances);
+
+                        // search the k nearest points for each new pixel
+                        std::vector<unsigned char> red(0), green(0), blue(0);
+                        std::vector<int> cnt(0);
+                        for (int l = 0; l < distances.size(); l++)
+                        {
+                            if (fabs(distances[l]) < 1e-6)
+                            {
+                                // if it is painted black, break
+                                break;
+                            }
+                            if (distances[l] < max_distance)
+                            {
+                                // Within the max distance, count the color
+                                std::vector<unsigned char> pixel =
+                                    warped_image.get_pixel(
+                                        closest_points[l] % data_->width(),
+                                        closest_points[l] / data_->width());
+                                bool flag = false;
+                                for (int m = 0; m < cnt.size(); m++)
+                                {
+                                    if (pixel[0] == red[m] &&
+                                        pixel[1] == green[m] &&
+                                        pixel[2] == blue[m])
+                                    {
+                                        flag = true;
+                                        cnt[m]++;
+                                        break;
+                                    }
+                                }
+                                if (flag == false)
+                                {
+                                    red.push_back(pixel[0]);
+                                    green.push_back(pixel[1]);
+                                    blue.push_back(pixel[2]);
+                                    cnt.push_back(1);
+                                }
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+
+                        // find the most frequent color and give it to the gap
+                        // pixel
+                        int maxcnt = 0, maxindex = -1;
+                        for (int l = 0; l < cnt.size(); l++)
+                        {
+                            if (cnt[l] > maxcnt)
+                            {
+                                maxcnt = cnt[l];
+                                maxindex = l;
+                            }
+                        }
+                        if (maxindex != -1)
+                        {
+                            std::vector<unsigned char> pixel = {
+                                red[maxindex], green[maxindex], blue[maxindex]
+                            };
+                            warped_image.set_pixel(i, j, pixel);
+                        }
+                        closest_points.clear();
+                        distances.clear();
+                    }
+                }
+            }
+            index.unbuild();
+            index.reinitialize();
         }
 
         // Get it back for further use
