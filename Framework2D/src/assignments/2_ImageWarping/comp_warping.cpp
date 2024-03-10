@@ -113,7 +113,8 @@ void CompWarping::gray_scale(int method)
             if (method = 1)
             {
                 gray_value =
-                    pixel[0] * 0.299 + pixel[1] * 0.587 + pixel[2] * 0.114;
+                    (unsigned char)(pixel[0] * 0.299 + pixel[1] * 0.587 +
+                                    pixel[2] * 0.114);
             }
             data_->set_pixel(i, j, { gray_value, gray_value, gray_value });
         }
@@ -161,7 +162,7 @@ void CompWarping::warping()
     {
         for (int y = 0; y < height; y++)
         {
-            warped_image.set_pixel(x, y, { 0, 0, 0 });
+            warped_image.set_pixel(x, y, { 0, 0, 0, 255 });
         }
     }
     // Apply warping function and store the result in warped_image

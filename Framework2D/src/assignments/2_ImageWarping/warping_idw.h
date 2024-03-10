@@ -452,7 +452,7 @@ class WarpingIDW : public Warping
 
             // Calculate the max distance to search, avoid paint at non-sight
             // area. Choose the maximum distance as the zoom ratio.
-            float oldmindis = distance_matrix(0, 1), newmaxdis = 0;
+            double oldmindis = distance_matrix(0, 1), newmaxdis = 0;
             for (int i = 0; i < n; i++)
             {
                 for (int j = 0; j < n; j++)
@@ -468,7 +468,7 @@ class WarpingIDW : public Warping
             {
                 for (int j = 0; j < n; j++)
                 {
-                    float dis = std::sqrt(
+                    double dis = std::sqrt(
                         std::pow(end_points[i].x - end_points[j].x, 2) +
                         std::pow(end_points[i].y - end_points[j].y, 2));
                     if (dis > newmaxdis)
@@ -477,7 +477,7 @@ class WarpingIDW : public Warping
                     }
                 }
             }
-            float max_distance = newmaxdis / oldmindis;
+            double max_distance = newmaxdis / oldmindis;
 
             // Fix the gap by ann method
             if (Fixgap_Flag_ANN == true && indexcnt)
@@ -485,7 +485,7 @@ class WarpingIDW : public Warping
                 // Build the index, the height of the tree is log2(indexcnt)
                 index.build((int)log2(indexcnt));
 
-                int k = 5;  // search k nearest points
+                int k = 3;  // search k nearest points
                 std::vector<int> closest_points;
                 std::vector<float> distances;
                 for (int i = 0; i < width; i++)
@@ -576,12 +576,12 @@ class WarpingIDW : public Warping
                         std::vector<int> cnt(0);
 
                         // Search the painted pixels within the max_distance
-                        for (int x = i - max_distance / 2;
-                             x <= i + max_distance / 2;
+                        for (int x = i - (int)(max_distance / 2);
+                             x <= i + (int)(max_distance / 2);
                              x++)
                         {
-                            for (int y = j - max_distance / 2;
-                                 y <= j + max_distance / 2;
+                            for (int y = j - (int)(max_distance / 2);
+                                 y <= j + (int)(max_distance / 2);
                                  y++)
                             {
                                 if (x < 0 || x >= width || y < 0 || y >= height)

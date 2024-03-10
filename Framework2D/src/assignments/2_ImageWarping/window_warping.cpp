@@ -96,9 +96,17 @@ void ImageWarping::draw_toolbar()
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::MenuItem("GrayScale"))
+            if (ImGui::BeginMenu("GrayScale"))
             {
-                p_image_->gray_scale();
+                if (ImGui::MenuItem("Average"))
+                {
+                    p_image_->gray_scale(0);
+                }
+                if (ImGui::MenuItem("Weighted"))
+                {
+                    p_image_->gray_scale(1);
+                }
+                ImGui::EndMenu();
             }
             ImGui::Separator();
 
