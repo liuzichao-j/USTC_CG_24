@@ -21,6 +21,7 @@ class Warping
         Image &warped_image,
         std::vector<ImVec2> &start_points,
         std::vector<ImVec2> &end_points,
-        bool Inverse_Flag = false) = 0;
+        bool Inverse_Flag = false,
+        bool Fixgap_Flag = false) = 0;
 };
-}  // namespace USCT_CG
+}  // namespace USTC_CG

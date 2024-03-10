@@ -30,9 +30,13 @@ class CompWarping : public ImageEditor
     // Set warping method
     void set_warping_method(int method);
 
-    // Whether to use the inverse warping function, default is true, for better
-    // warping effect
-    bool inverse_flag = true;
+    // Whether to use the inverse warping function, default is false. 
+    bool inverse_flag = false;
+    // Whether to fix the gaps in normal mode, default is false.
+    bool fixgap_flag = false;
+
+    // Whether to show the points
+    bool flag_enable_selecting_points_ = false;
 
    private:
     // Store the original image data
@@ -43,7 +47,6 @@ class CompWarping : public ImageEditor
     std::shared_ptr<Warping> warping_;
 
     ImVec2 start_, end_;
-    bool flag_enable_selecting_points_ = false;
     bool draw_status_ = false;
 };
 

@@ -180,7 +180,7 @@ void CompWarping::warping()
     }
     // Apply warping function and store the result in warped_image
     warping_->warping(
-        data_, warped_image, start_points_, end_points_, inverse_flag);
+        data_, warped_image, start_points_, end_points_, inverse_flag, fixgap_flag);
     *data_ = std::move(warped_image);
     update();
 }
@@ -189,10 +189,6 @@ void CompWarping::restore()
 {
     *data_ = *back_up_;
     update();
-    if(start_points_.size() > 0)
-    {
-        enable_selecting(true);
-    }
 }
 
 void CompWarping::enable_selecting(bool flag)

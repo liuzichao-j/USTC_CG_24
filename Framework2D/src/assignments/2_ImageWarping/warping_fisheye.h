@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+#include "annoylib.h"
+#include "kissrandom.h"
 #include "warping.h"
 
 namespace USTC_CG
@@ -21,22 +23,35 @@ class WarpingFishEye : public Warping
      * @param start_points The start points for warping.
      * @param end_points The end points for warping.
      * @param Inverse_Flag Whether to use the inverse warping function.
+     * @param Fixgap_Flag Whether to fix the gap in normal warping function.
      */
     void warping(
         std::shared_ptr<Image> &data_,
         Image &warped_image,
         std::vector<ImVec2> &start_points,
         std::vector<ImVec2> &end_points,
-        bool Inverse_Flag = false) override
+        bool Inverse_Flag = false,
+        bool Fixgap_Flag = false) override
     {
         // Example: (simplified) "fish-eye" warping
         // For each (x, y) from the input image, the "fish-eye" warping transfer
         // it to (x', y') in the new image: Note: For this transformation
         // ("fish-eye" warping), one can also calculate the inverse (x', y') ->
         // (x, y) to fill in the "gaps".
-        for (int y = 0; y < data_->height(); ++y)
+
+        // Fix the gap using ann method
+        Annoy::AnnoyIndex<
+            int,
+            float,
+            Annoy::Euclidean,
+            Annoy::Kiss32Random,
+            Annoy::AnnoyIndexSingleThreadedBuildPolicy>
+            index(2);
+        int indexcnt = 0;
+
+        for (int x = 0; x < data_->width(); ++x)
         {
-            for (int x = 0; x < data_->width(); ++x)
+            for (int y = 0; y < data_->height(); ++y)
             {
                 // Apply warping function to (x, y), and we can get (x',
                 // y')
@@ -76,6 +91,15 @@ class WarpingFishEye : public Warping
                         std::vector<unsigned char> pixel =
                             data_->get_pixel(x, y);
                         warped_image.set_pixel(new_x, new_y, pixel);
+                        // Store given pixels for ann method
+                        if (Fixgap_Flag == true)
+                        {
+                            float p[2] = { (float)new_x, (float)new_y };
+                            index.add_item(new_y * width + new_x, p);
+                            indexcnt++;
+                            // printf("add item index %d, place %f, %f\n", new_y
+                            // * width + new_x, p[0], p[1]);
+                        }
                     }
                 }
                 else
@@ -107,6 +131,87 @@ class WarpingFishEye : public Warping
                             data_->get_pixel(old_x, old_y);
                         warped_image.set_pixel(x, y, pixel);
                     }
+                }
+            }
+        }
+
+        // Fix the gap using ann method
+        if (Fixgap_Flag == true && indexcnt)
+        {
+            index.build((int)log2(indexcnt));
+            int k = 3;  // search k nearest points
+            float max_distance =
+                2.0f;  // max distance to search, avoid paint at non-sight area
+            std::vector<int> closest_points;
+            std::vector<float> distances;
+            for (int i = 0; i < data_->width(); i++)
+            {
+                for (int j = 0; j < data_->height(); j++)
+                {
+                    float p[2] = { (float)i, (float)j };
+                    index.get_nns_by_vector(
+                        p, k, -1, &closest_points, &distances);
+
+                    // search the k nearest points for each new pixel
+                    std::vector<unsigned char> red(0), green(0), blue(0);
+                    std::vector<int> cnt(0);
+                    for (int l = 0; l < distances.size(); l++)
+                    {
+                        if (fabs(distances[l]) < 1e-6)
+                        {
+                            // if it is painted, break
+                            break;
+                        }
+                        if (distances[l] < max_distance)
+                        {
+                            // Within the max distance, count the color
+                            std::vector<unsigned char> pixel = data_->get_pixel(
+                                closest_points[l] % data_->width(),
+                                closest_points[l] / data_->width());
+                            bool flag = false;
+                            for (int m = 0; m < cnt.size(); m++)
+                            {
+                                if (pixel[0] == red[m] &&
+                                    pixel[1] == green[m] && pixel[2] == blue[m])
+                                {
+                                    flag = true;
+                                    cnt[m]++;
+                                    break;
+                                }
+                            }
+                            if (flag == false)
+                            {
+                                red.push_back(pixel[0]);
+                                green.push_back(pixel[1]);
+                                blue.push_back(pixel[2]);
+                                cnt.push_back(1);
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                    // find the most frequent color and give it to the gap pixel
+                    int maxcnt = 0, maxindex = -1;
+                    for (int l = 0; l < cnt.size(); l++)
+                    {
+                        if (cnt[l] > maxcnt)
+                        {
+                            maxcnt = cnt[l];
+                            maxindex = l;
+                        }
+                    }
+                    if (maxindex != -1)
+                    {
+                        std::vector<unsigned char> pixel = { red[maxindex],
+                                                             green[maxindex],
+                                                             blue[maxindex] };
+                        warped_image.set_pixel(i, j, pixel);
+                    }
+                    closest_points.clear();
+                    distances.clear();
                 }
             }
         }

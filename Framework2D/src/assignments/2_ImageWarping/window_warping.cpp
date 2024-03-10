@@ -77,38 +77,42 @@ void ImageWarping::draw_toolbar()
             p_image_->gray_scale();
         }
         ImGui::Separator();
-        if (ImGui::MenuItem("Select Points") && p_image_)
+        if (ImGui::BeginMenu("Points"))
         {
-            // p_image_->init_selections();
-            p_image_->enable_selecting(true);
-        }
-        if (ImGui::MenuItem("Reset Points") && p_image_)
-        {
-            p_image_->init_selections();
+            if (ImGui::MenuItem("Select Points") && p_image_)
+            {
+                p_image_->enable_selecting(true);
+            }
+            if (ImGui::MenuItem("Reset Points") && p_image_)
+            {
+                p_image_->init_selections();
+            }
+            if (ImGui::MenuItem("Hide Points") && p_image_)
+            {
+                p_image_->enable_selecting(false);
+            }
+            ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Warping"))
         {
-            // HW2_TODO: You can add more interactions for IDW, RBF, etc.
-            if (ImGui::MenuItem("Warping-FishEye") && p_image_)
+            if (ImGui::MenuItem("FishEye") && p_image_)
             {
                 p_image_->set_warping_method(0);
                 p_image_->enable_selecting(false);
                 p_image_->warping();
-                p_image_->init_selections();
             }
+            // HW2_TODO: You can add more interactions for IDW, RBF, etc.
             if (ImGui::MenuItem("Warping-IDW") && p_image_)
             {
                 p_image_->set_warping_method(1);
                 p_image_->enable_selecting(false);
                 p_image_->warping();
-                // p_image_->init_selections();
             }
             if (ImGui::MenuItem("Warping-RBF") && p_image_)
             {
                 p_image_->set_warping_method(2);
                 p_image_->enable_selecting(false);
                 p_image_->warping();
-                p_image_->init_selections();
             }
             ImGui::EndMenu();
         }
@@ -120,19 +124,14 @@ void ImageWarping::draw_toolbar()
         ImGui::Separator();
         if (p_image_)
         {
-            if (p_image_->inverse_flag)
+            ImGui::Checkbox("Inverse Warping", &p_image_->inverse_flag);
+            if (p_image_->inverse_flag == false)
             {
-                if (ImGui::MenuItem("Normal Warping"))
-                {
-                    p_image_->inverse_flag = false;
-                }
+                ImGui::Checkbox("Fix gaps", &p_image_->fixgap_flag);
             }
             else
             {
-                if (ImGui::MenuItem("Inverse Warping"))
-                {
-                    p_image_->inverse_flag = true;
-                }
+                p_image_->fixgap_flag = false;
             }
         }
         ImGui::EndMainMenuBar();

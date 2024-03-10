@@ -20,13 +20,15 @@ class WarpingIDW : public Warping
      * @param start_points The start points for warping.
      * @param end_points The end points for warping.
      * @param Inverse_Flag Whether to use the inverse warping function.
+     * @param Fixgap_Flag Whether to fix the gap in normal warping function.
      */
     void warping(
         std::shared_ptr<Image> &data_,
         Image &warped_image,
         std::vector<ImVec2> &start_points,
         std::vector<ImVec2> &end_points,
-        bool Inverse_Flag = false) override
+        bool Inverse_Flag = false,
+        bool Fixgap_Flag = false) override
     {
         /**
          * Given f(p_i) = (q_i), Use f(p) = Sum_i (w_i(p) * f_i(p)).
@@ -94,7 +96,6 @@ class WarpingIDW : public Warping
         if (n == 0)
         {
             warped_image = *data_;
-            return;
         }
 
         // If there is only one start point: w_1(p) = 1, f_1(p) = q_1 + D_1(p -
@@ -102,7 +103,9 @@ class WarpingIDW : public Warping
         // set D_1 = I, where I is the identity matrix. So f(p) = q_1 + (p -
         // p_1), which is the translation of the image.
         // If following steps below, we can get D_1 = 0, not suitable.
-        if (n == 1)
+        // For it is an identity transformation, there is no need to fix the
+        // gap.
+        else if (n == 1)
         {
             for (int old_x = 0; old_x < data_->width(); old_x++)
             {
@@ -132,7 +135,6 @@ class WarpingIDW : public Warping
                     }
                 }
             }
-            return;
         }
 
         // If there are only two start points, D_1 = D_2 are not unique, leading
@@ -151,8 +153,15 @@ class WarpingIDW : public Warping
         // D_2(p - p_2). f(p) = w_1(p)f_1(p) + w_2(p)f_2(p), where w_1(p) =
         // sigma_1(p)/(sigma_1(p) + sigma_2(p)), w_2(p) = sigma_2(p)/(sigma_1(p)
         // + sigma_2(p)).
-        if (n == 2)
+        // For there are maybe some expanded pixels, we need to fix the gap.
+        // Inverse way would be effective.
+        else if (n == 2)
         {
+            // Fix the gap by inverse method
+            if (Fixgap_Flag == true && Inverse_Flag == false)
+            {
+                std::swap(start_points, end_points);
+            }
             double d_1 = (end_points[1].x - end_points[0].x) /
                          (start_points[1].x - start_points[0].x);
             double d_2 = (end_points[1].y - end_points[0].y) /
@@ -185,6 +194,196 @@ class WarpingIDW : public Warping
                                       sigma_2 / (sigma_1 + sigma_2) *
                                           (end_points[1].y +
                                            d_2 * (old_y - start_points[1].y)));
+                    if (Inverse_Flag == true || Fixgap_Flag == true)
+                    {
+                        if (new_x >= 0 && new_x < data_->width() &&
+                            new_y >= 0 && new_y < data_->height())
+                        {
+                            warped_image.set_pixel(
+                                old_x, old_y, data_->get_pixel(new_x, new_y));
+                        }
+                    }
+                    else
+                    {
+                        if (new_x >= 0 && new_x < data_->width() &&
+                            new_y >= 0 && new_y < data_->height())
+                        {
+                            warped_image.set_pixel(
+                                new_x, new_y, data_->get_pixel(old_x, old_y));
+                        }
+                    }
+                }
+            }
+            if (Fixgap_Flag == true && Inverse_Flag == false)
+            {
+                std::swap(start_points, end_points);
+            }
+        }
+
+        // If there are more than two points, there is no need to specially deal
+        // with it. If D degenrates to a line: in normal way, it is a line; in
+        // inverse way, the new picture degenrates to a line in the old picture,
+        // so the picture will be a line that expands vertically to full
+        // picture. This shows the difference between normal and inverse way.
+        else
+        {
+            // Calculate the distance between start points (p_i, p_j)
+            Eigen::MatrixXd distance_matrix(n, n);
+            for (int i = 0; i < n; ++i)
+            {
+                for (int j = 0; j < n; ++j)
+                {
+                    distance_matrix(i, j) = std::sqrt(
+                        std::pow(start_points[i].x - start_points[j].x, 2) +
+                        std::pow(start_points[i].y - start_points[j].y, 2));
+                }
+            }
+
+            // Calculate sigma_i(p_j) = 1 / ||p_j - p_i||^mu
+            Eigen::MatrixXd sigma_matrix(n, n);
+            for (int i = 0; i < n; ++i)
+            {
+                for (int j = 0; j < n; ++j)
+                {
+                    if (i == j)
+                    {
+                        sigma_matrix(i, j) = 0;
+                        // Avoid division by zero
+                    }
+                    else
+                    {
+                        sigma_matrix(i, j) =
+                            1 / std::pow(distance_matrix(i, j), mu);
+                    }
+                }
+            }
+
+            // Calculate the D matrix
+            std::vector<Eigen::MatrixXd> d_matrix(
+                n, Eigen::MatrixXd::Zero(2, 2));
+            for (int i = 0; i < n; i++)
+            {
+                // Calculate D_i matrix by solving linear equations of four
+                // variables, D_i_11, D_i_12, D_i_21, D_i_22
+
+                // Calculate A matrix
+                Eigen::MatrixXd A = Eigen::MatrixXd::Zero(4, 4);
+                for (int j = 0; j < n; j++)
+                {
+                    A(0, 0) +=
+                        sigma_matrix(i, j) *
+                        std::pow(start_points[j].x - start_points[i].x, 2);
+                    A(0, 1) += sigma_matrix(i, j) *
+                               (start_points[j].x - start_points[i].x) *
+                               (start_points[j].y - start_points[i].y);
+                    A(1, 0) += sigma_matrix(i, j) *
+                               (start_points[j].x - start_points[i].x) *
+                               (start_points[j].y - start_points[i].y);
+                    A(1, 1) +=
+                        sigma_matrix(i, j) *
+                        std::pow(start_points[j].y - start_points[i].y, 2);
+                    A(2, 2) +=
+                        sigma_matrix(i, j) *
+                        std::pow(start_points[j].x - start_points[i].x, 2);
+                    A(2, 3) += sigma_matrix(i, j) *
+                               (start_points[j].x - start_points[i].x) *
+                               (start_points[j].y - start_points[i].y);
+                    A(3, 2) += sigma_matrix(i, j) *
+                               (start_points[j].x - start_points[i].x) *
+                               (start_points[j].y - start_points[i].y);
+                    A(3, 3) +=
+                        sigma_matrix(i, j) *
+                        std::pow(start_points[j].y - start_points[i].y, 2);
+                }
+
+                // Calculate b matrix
+                Eigen::VectorXd b = Eigen::VectorXd::Zero(4);
+                for (int j = 0; j < n; j++)
+                {
+                    b(0) += sigma_matrix(i, j) *
+                            (start_points[j].x - start_points[i].x) *
+                            (end_points[j].x - end_points[i].x);
+                    b(1) += sigma_matrix(i, j) *
+                            (start_points[j].y - start_points[i].y) *
+                            (end_points[j].x - end_points[i].x);
+                    b(2) += sigma_matrix(i, j) *
+                            (start_points[j].x - start_points[i].x) *
+                            (end_points[j].y - end_points[i].y);
+                    b(3) += sigma_matrix(i, j) *
+                            (start_points[j].y - start_points[i].y) *
+                            (end_points[j].y - end_points[i].y);
+                }
+
+                // Solve the linear equations A * x = b
+                Eigen::VectorXd x = A.colPivHouseholderQr().solve(b);
+
+                // Store the result to D matrix
+                d_matrix[i](0, 0) = x(0);
+                d_matrix[i](0, 1) = x(1);
+                d_matrix[i](1, 0) = x(2);
+                d_matrix[i](1, 1) = x(3);
+            }
+
+            // Got D matrix, calculate f(p) for each pixel
+            for (int old_x = 0; old_x < data_->width(); old_x++)
+            {
+                for (int old_y = 0; old_y < data_->height(); old_y++)
+                {
+                    int new_x = 0;
+                    int new_y = 0;
+
+                    // Answer shows as sum of w_i(p) * f_i(p)
+                    for (int i = 0; i < n; i++)
+                    {
+                        // Calculate w_i(p) = sigma_i(p) / (Sum_j sigma_j(p)),
+                        // where p = (old_x, old_y)
+                        double sigmasum = 0;
+                        for (int j = 0; j < n; j++)
+                        {
+                            if (old_x != start_points[j].x ||
+                                old_y != start_points[j].y)
+                            {
+                                sigmasum +=
+                                    1 /
+                                    std::pow(
+                                        std::sqrt(
+                                            std::pow(
+                                                old_x - start_points[j].x, 2) +
+                                            std::pow(
+                                                old_y - start_points[j].y, 2)),
+                                        mu);
+                            }
+                        }
+                        double w;
+                        if (old_x == start_points[i].x &&
+                            old_y == start_points[i].y)
+                        {
+                            w = 1;
+                        }
+                        else
+                        {
+                            w = 1 /
+                                std::pow(
+                                    std::sqrt(
+                                        std::pow(old_x - start_points[i].x, 2) +
+                                        std::pow(old_y - start_points[i].y, 2)),
+                                    mu) /
+                                sigmasum;
+                        }
+
+                        // Calculate f_i(p) = q_i + D_i(p - p_i) and sum them up
+                        new_x += (int)(w * (end_points[i].x +
+                                            d_matrix[i](0, 0) *
+                                                (old_x - start_points[i].x) +
+                                            d_matrix[i](0, 1) *
+                                                (old_y - start_points[i].y)));
+                        new_y += (int)(w * (end_points[i].y +
+                                            d_matrix[i](1, 0) *
+                                                (old_x - start_points[i].x) +
+                                            d_matrix[i](1, 1) *
+                                                (old_y - start_points[i].y)));
+                    }
+                    // Set the color of the new pixel
                     if (Inverse_Flag == false)
                     {
                         if (new_x >= 0 && new_x < data_->width() &&
@@ -199,183 +398,11 @@ class WarpingIDW : public Warping
                         if (new_x >= 0 && new_x < data_->width() &&
                             new_y >= 0 && new_y < data_->height())
                         {
+                            // The difference of inverse: calculate what pixel
+                            // is the new one originated from.
                             warped_image.set_pixel(
                                 old_x, old_y, data_->get_pixel(new_x, new_y));
                         }
-                    }
-                }
-            }
-            return;
-        }
-
-        // Calculate the distance between start points (p_i, p_j)
-        Eigen::MatrixXd distance_matrix(n, n);
-        for (int i = 0; i < n; ++i)
-        {
-            for (int j = 0; j < n; ++j)
-            {
-                distance_matrix(i, j) = std::sqrt(
-                    std::pow(start_points[i].x - start_points[j].x, 2) +
-                    std::pow(start_points[i].y - start_points[j].y, 2));
-            }
-        }
-
-        // Calculate sigma_i(p_j) = 1 / ||p_j - p_i||^mu
-        Eigen::MatrixXd sigma_matrix(n, n);
-        for (int i = 0; i < n; ++i)
-        {
-            for (int j = 0; j < n; ++j)
-            {
-                if (i == j)
-                {
-                    sigma_matrix(i, j) = 0;
-                    // Avoid division by zero
-                }
-                else
-                {
-                    sigma_matrix(i, j) =
-                        1 / std::pow(distance_matrix(i, j), mu);
-                }
-            }
-        }
-
-        // Calculate the D matrix
-        std::vector<Eigen::MatrixXd> d_matrix(n, Eigen::MatrixXd::Zero(2, 2));
-        for (int i = 0; i < n; i++)
-        {
-            // Calculate D_i matrix by solving linear equations of four
-            // variables, D_i_11, D_i_12, D_i_21, D_i_22
-
-            // Calculate A matrix
-            Eigen::MatrixXd A = Eigen::MatrixXd::Zero(4, 4);
-            for (int j = 0; j < n; j++)
-            {
-                A(0, 0) += sigma_matrix(i, j) *
-                           std::pow(start_points[j].x - start_points[i].x, 2);
-                A(0, 1) += sigma_matrix(i, j) *
-                           (start_points[j].x - start_points[i].x) *
-                           (start_points[j].y - start_points[i].y);
-                A(1, 0) += sigma_matrix(i, j) *
-                           (start_points[j].x - start_points[i].x) *
-                           (start_points[j].y - start_points[i].y);
-                A(1, 1) += sigma_matrix(i, j) *
-                           std::pow(start_points[j].y - start_points[i].y, 2);
-                A(2, 2) += sigma_matrix(i, j) *
-                           std::pow(start_points[j].x - start_points[i].x, 2);
-                A(2, 3) += sigma_matrix(i, j) *
-                           (start_points[j].x - start_points[i].x) *
-                           (start_points[j].y - start_points[i].y);
-                A(3, 2) += sigma_matrix(i, j) *
-                           (start_points[j].x - start_points[i].x) *
-                           (start_points[j].y - start_points[i].y);
-                A(3, 3) += sigma_matrix(i, j) *
-                           std::pow(start_points[j].y - start_points[i].y, 2);
-            }
-
-            // Calculate b matrix
-            Eigen::VectorXd b = Eigen::VectorXd::Zero(4);
-            for (int j = 0; j < n; j++)
-            {
-                b(0) += sigma_matrix(i, j) *
-                        (start_points[j].x - start_points[i].x) *
-                        (end_points[j].x - end_points[i].x);
-                b(1) += sigma_matrix(i, j) *
-                        (start_points[j].y - start_points[i].y) *
-                        (end_points[j].x - end_points[i].x);
-                b(2) += sigma_matrix(i, j) *
-                        (start_points[j].x - start_points[i].x) *
-                        (end_points[j].y - end_points[i].y);
-                b(3) += sigma_matrix(i, j) *
-                        (start_points[j].y - start_points[i].y) *
-                        (end_points[j].y - end_points[i].y);
-            }
-
-            // Solve the linear equations A * x = b
-            Eigen::VectorXd x = A.colPivHouseholderQr().solve(b);
-
-            // Store the result to D matrix
-            d_matrix[i](0, 0) = x(0);
-            d_matrix[i](0, 1) = x(1);
-            d_matrix[i](1, 0) = x(2);
-            d_matrix[i](1, 1) = x(3);
-        }
-
-        // Got D matrix, calculate f(p) for each pixel
-        for (int old_x = 0; old_x < data_->width(); old_x++)
-        {
-            for (int old_y = 0; old_y < data_->height(); old_y++)
-            {
-                int new_x = 0;
-                int new_y = 0;
-
-                // Answer shows as sum of w_i(p) * f_i(p)
-                for (int i = 0; i < n; i++)
-                {
-                    // Calculate w_i(p) = sigma_i(p) / (Sum_j sigma_j(p)), where
-                    // p = (old_x, old_y)
-                    double sigmasum = 0;
-                    for (int j = 0; j < n; j++)
-                    {
-                        if (old_x != start_points[j].x ||
-                            old_y != start_points[j].y)
-                        {
-                            sigmasum +=
-                                1 /
-                                std::pow(
-                                    std::sqrt(
-                                        std::pow(old_x - start_points[j].x, 2) +
-                                        std::pow(old_y - start_points[j].y, 2)),
-                                    mu);
-                        }
-                    }
-                    double w;
-                    if (old_x == start_points[i].x &&
-                        old_y == start_points[i].y)
-                    {
-                        w = 1;
-                    }
-                    else
-                    {
-                        w = 1 /
-                            std::pow(
-                                std::sqrt(
-                                    std::pow(old_x - start_points[i].x, 2) +
-                                    std::pow(old_y - start_points[i].y, 2)),
-                                mu) /
-                            sigmasum;
-                    }
-
-                    // Calculate f_i(p) = q_i + D_i(p - p_i) and sum them up
-                    new_x += (int)(w * (end_points[i].x +
-                                        d_matrix[i](0, 0) *
-                                            (old_x - start_points[i].x) +
-                                        d_matrix[i](0, 1) *
-                                            (old_y - start_points[i].y)));
-                    new_y += (int)(w * (end_points[i].y +
-                                        d_matrix[i](1, 0) *
-                                            (old_x - start_points[i].x) +
-                                        d_matrix[i](1, 1) *
-                                            (old_y - start_points[i].y)));
-                }
-                // Set the color of the new pixel
-                if (Inverse_Flag == false)
-                {
-                    if (new_x >= 0 && new_x < data_->width() && new_y >= 0 &&
-                        new_y < data_->height())
-                    {
-                        warped_image.set_pixel(
-                            new_x, new_y, data_->get_pixel(old_x, old_y));
-                    }
-                }
-                else
-                {
-                    if (new_x >= 0 && new_x < data_->width() && new_y >= 0 &&
-                        new_y < data_->height())
-                    {
-                        // The difference of inverse: calculate what pixel is
-                        // the new one originated from.
-                        warped_image.set_pixel(
-                            old_x, old_y, data_->get_pixel(new_x, new_y));
                     }
                 }
             }
