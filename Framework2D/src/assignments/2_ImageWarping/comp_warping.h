@@ -17,7 +17,7 @@ class CompWarping : public ImageEditor
     // Simple edit functions
     void invert();
     void mirror(bool is_horizontal, bool is_vertical);
-    void gray_scale();
+    void gray_scale(int method = 0);
 
     void warping();
     void restore();
@@ -30,7 +30,7 @@ class CompWarping : public ImageEditor
     // Set warping method
     void set_warping_method(int method);
 
-    // Whether to use the inverse warping function, default is false. 
+    // Whether to use the inverse warping function, default is false.
     bool inverse_flag = false;
     // Whether to fix the gaps in normal mode, default is false.
     bool fixgap_flag_ann = false;
@@ -50,5 +50,4 @@ class CompWarping : public ImageEditor
     ImVec2 start_, end_;
     bool draw_status_ = false;
 };
-
 }  // namespace USTC_CG

@@ -15,6 +15,11 @@ ImageWarping::~ImageWarping()
 {
 }
 
+/**
+ * @brief Draw the main window
+ * Draw the toolbar and the open/save file dialog. Draw the image by calling the
+ * draw function of the CompWarping class.
+ */
 void ImageWarping::draw()
 {
     draw_toolbar();
@@ -22,9 +27,9 @@ void ImageWarping::draw()
     {
         draw_open_image_file_dialog();
     }
-    if (flag_save_file_dialog_ &&
-        p_image_)  // Only save the image when it is not empty
+    if (flag_save_file_dialog_ && p_image_)
     {
+        // Only save the image when it is not empty
         draw_save_image_file_dialog();
     }
 
@@ -47,6 +52,11 @@ void ImageWarping::draw()
     }
 }
 
+/**
+ * @brief Draw the toolbar
+ * Draw the main menu bar and the submenus for file operations, image editing,
+ * and warping.
+ */
 void ImageWarping::draw_toolbar()
 {
     if (ImGui::BeginMainMenuBar())
@@ -70,34 +80,48 @@ void ImageWarping::draw_toolbar()
             {
                 p_image_->invert();
             }
-            if (ImGui::MenuItem("Mirror"))
+            if (ImGui::BeginMenu("Mirror"))
             {
-                p_image_->mirror(true, false);
+                if (ImGui::MenuItem("Horizontal"))
+                {
+                    p_image_->mirror(true, false);
+                }
+                if (ImGui::MenuItem("Vertical"))
+                {
+                    p_image_->mirror(false, true);
+                }
+                if (ImGui::MenuItem("Both"))
+                {
+                    p_image_->mirror(true, true);
+                }
+                ImGui::EndMenu();
             }
             if (ImGui::MenuItem("GrayScale"))
             {
                 p_image_->gray_scale();
             }
             ImGui::Separator();
+
             if (ImGui::BeginMenu("Points"))
             {
-                if (ImGui::MenuItem("Select Points") && p_image_)
+                if (ImGui::MenuItem("Select") && p_image_)
                 {
                     p_image_->enable_selecting(true);
                 }
-                if (ImGui::MenuItem("Reset Points") && p_image_)
-                {
-                    p_image_->init_selections();
-                }
-                if (ImGui::MenuItem("Hide Points") && p_image_)
+                if (ImGui::MenuItem("Hide") && p_image_)
                 {
                     p_image_->enable_selecting(false);
                 }
+                if (ImGui::MenuItem("Reset") && p_image_)
+                {
+                    p_image_->init_selections();
+                }
                 ImGui::EndMenu();
             }
+
             if (ImGui::BeginMenu("Warping"))
             {
-                if (ImGui::MenuItem("FishEye") && p_image_)
+                if (ImGui::MenuItem("FishEye"))
                 {
                     p_image_->set_warping_method(0);
                     p_image_->enable_selecting(false);
@@ -105,13 +129,13 @@ void ImageWarping::draw_toolbar()
                 }
                 ImGui::Separator();
                 // HW2_TODO: You can add more interactions for IDW, RBF, etc.
-                if (ImGui::MenuItem("IDW") && p_image_)
+                if (ImGui::MenuItem("IDW"))
                 {
                     p_image_->set_warping_method(1);
                     p_image_->enable_selecting(false);
                     p_image_->warping();
                 }
-                if (ImGui::MenuItem("RBF") && p_image_)
+                if (ImGui::MenuItem("RBF"))
                 {
                     p_image_->set_warping_method(2);
                     p_image_->enable_selecting(false);
@@ -119,12 +143,6 @@ void ImageWarping::draw_toolbar()
                 }
                 ImGui::EndMenu();
             }
-            ImGui::Separator();
-            if (ImGui::MenuItem("Restore") && p_image_)
-            {
-                p_image_->restore();
-            }
-            ImGui::Separator();
             if (ImGui::BeginMenu("Fix gaps"))
             {
                 ImGui::Checkbox("Inverse Warping", &p_image_->inverse_flag);
@@ -148,11 +166,21 @@ void ImageWarping::draw_toolbar()
                 }
                 ImGui::EndMenu();
             }
+            ImGui::Separator();
+
+            if (ImGui::MenuItem("Restore") && p_image_)
+            {
+                p_image_->restore();
+            }
         }
         ImGui::EndMainMenuBar();
     }
 }
 
+/**
+ * @brief Draw the image on center of the window with the original size of the
+ * image
+ */
 void ImageWarping::draw_image()
 {
     const auto& canvas_min = ImGui::GetCursorScreenPos();
@@ -166,6 +194,12 @@ void ImageWarping::draw_image()
     p_image_->draw();
 }
 
+/**
+ * @brief Draw the open file dialog
+ * Use the ImGuiFileDialog library to open a file dialog for choosing an image
+ * file. The file dialog is modal and will be displayed when the flag
+ * flag_open_file_dialog_ is true.
+ */
 void ImageWarping::draw_open_image_file_dialog()
 {
     IGFD::FileDialogConfig config;
@@ -192,6 +226,12 @@ void ImageWarping::draw_open_image_file_dialog()
     }
 }
 
+/**
+ * @brief Draw the save file dialog
+ * Use the ImGuiFileDialog library to open a file dialog for choosing a file to
+ * save the image. The file dialog is modal and will be displayed when the flag
+ * flag_save_file_dialog_ is true.
+ */
 void ImageWarping::draw_save_image_file_dialog()
 {
     IGFD::FileDialogConfig config;

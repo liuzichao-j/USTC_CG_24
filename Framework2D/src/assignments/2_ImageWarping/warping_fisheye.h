@@ -41,7 +41,10 @@ class WarpingFishEye : public Warping
         // ("fish-eye" warping), one can also calculate the inverse (x', y') ->
         // (x, y) to fill in the "gaps".
 
-        // Fix the gap using ann method, proves to be very slow
+        int width = data_->width();
+        int height = data_->height();
+
+        // Fix the gap by ann method
         Annoy::AnnoyIndex<
             int,
             float,
@@ -52,29 +55,27 @@ class WarpingFishEye : public Warping
         int indexcnt = 0;
 
         // Detect which new pixel is painted
-        std::vector<bool> painted(data_->width() * data_->height(), false);
+        std::vector<bool> painted(width * height, false);
 
-        for (int x = 0; x < data_->width(); ++x)
+        for (int old_x = 0; old_x < width; old_x++)
         {
-            for (int y = 0; y < data_->height(); ++y)
+            for (int old_y = 0; old_y < height; old_y++)
             {
                 // Apply warping function to (x, y), and we can get (x',
                 // y')
-                int width = data_->width();
-                int height = data_->height();
                 float center_x = width / 2.0f;
                 float center_y = height / 2.0f;
-                float dx = x - center_x;
-                float dy = y - center_y;
+                float dx = old_x - center_x;
+                float dy = old_y - center_y;
                 float distance = std::sqrt(dx * dx + dy * dy);
+                float new_distance;
+                int new_x = 0;
+                int new_y = 0;
 
                 if (Inverse_Flag == false)
                 {
                     // Simple non-linear transformation r -> r' = f(r)
-                    float new_distance = std::sqrt(distance) * 10;
-                    int new_x = 0;
-                    int new_y = 0;
-
+                    new_distance = std::sqrt(distance) * 10;
                     if (distance == 0)
                     {
                         new_x = static_cast<int>(center_x);
@@ -88,54 +89,48 @@ class WarpingFishEye : public Warping
                         new_y = static_cast<int>(center_y + dy * ratio);
                     }
 
-                    // Copy the color from the original image to the result
-                    // image
+                    // Set the color of the new pixel
                     if (new_x >= 0 && new_x < width && new_y >= 0 &&
                         new_y < height)
                     {
-                        std::vector<unsigned char> pixel =
-                            data_->get_pixel(x, y);
-                        warped_image.set_pixel(new_x, new_y, pixel);
+                        warped_image.set_pixel(
+                            new_x, new_y, data_->get_pixel(old_x, old_y));
                         painted[new_y * width + new_x] = true;
-                        // Store given pixels for ann method
                         if (Fixgap_Flag_ANN == true)
                         {
                             float p[2] = { (float)new_x, (float)new_y };
+                            // Add the painted pixel to the index. Choose id
+                            // as y * width + x, to easily find out the
+                            // pixel by id
                             index.add_item(new_y * width + new_x, p);
                             indexcnt++;
-                            // printf("add item index %d, place %f, %f\n", new_y
-                            // * width + new_x, p[0], p[1]);
                         }
                     }
                 }
                 else
                 {
                     // Another way: Inverse (x', y') -> (x, y)
-                    float old_distance = distance * distance / 100;
-                    int old_x;
-                    int old_y;
+                    new_distance = distance * distance / 100;
 
                     if (distance == 0)
                     {
-                        old_x = static_cast<int>(center_x);
-                        old_y = static_cast<int>(center_y);
+                        new_x = static_cast<int>(center_x);
+                        new_y = static_cast<int>(center_y);
                     }
                     else
                     {
                         // (x, y)
-                        float ratio = old_distance / distance;
-                        old_x = static_cast<int>(center_x + dx * ratio);
-                        old_y = static_cast<int>(center_y + dy * ratio);
+                        float ratio = new_distance / distance;
+                        new_x = static_cast<int>(center_x + dx * ratio);
+                        new_y = static_cast<int>(center_y + dy * ratio);
                     }
 
-                    // Copy the color from the original image to the result
-                    // image
-                    if (old_x >= 0 && old_x < width && old_y >= 0 &&
-                        old_y < height)
+                    // Set the color of the new pixel
+                    if (new_x >= 0 && new_x < width && new_y >= 0 &&
+                        new_y < height)
                     {
-                        std::vector<unsigned char> pixel =
-                            data_->get_pixel(old_x, old_y);
-                        warped_image.set_pixel(x, y, pixel);
+                        warped_image.set_pixel(
+                            old_x, old_y, data_->get_pixel(new_x, new_y));
                     }
                 }
             }
@@ -144,38 +139,43 @@ class WarpingFishEye : public Warping
         // Fix the gap using ann method
         if (Fixgap_Flag_ANN == true && indexcnt)
         {
+            // Build the index, the height of the tree is log2(indexcnt)
             index.build((int)log2(indexcnt));
+
+            float max_distance = 2.0f;
+            // max distance to search, avoid paint at non-sight area
+
             int k = 3;  // search k nearest points
-            float max_distance =
-                2.0f;  // max distance to search, avoid paint at non-sight area
             std::vector<int> closest_points;
             std::vector<float> distances;
-            for (int i = 0; i < data_->width(); i++)
+            for (int i = 0; i < width; i++)
             {
-                for (int j = 0; j < data_->height(); j++)
+                for (int j = 0; j < height; j++)
                 {
-                    if (painted[j * data_->width() + i])
+                    if (painted[j * width + i])
                     {
+                        // Painted, continue
                         continue;
                     }
+
+                    // search the k nearest points for each new pixel
                     float p[2] = { (float)i, (float)j };
                     index.get_nns_by_vector(
                         p, k, -1, &closest_points, &distances);
 
-                    // search the k nearest points for each new pixel
                     std::vector<unsigned char> red(0), green(0), blue(0);
                     std::vector<int> cnt(0);
                     for (int l = 0; l < distances.size(); l++)
                     {
                         if (distances[l] > max_distance)
                         {
-                            continue;
+                            break;
                         }
                         // Within the max distance, count the color
                         std::vector<unsigned char> pixel =
                             warped_image.get_pixel(
-                                closest_points[l] % data_->width(),
-                                closest_points[l] / data_->width());
+                                closest_points[l] % width,
+                                closest_points[l] / width);
                         bool flag = false;
                         for (int m = 0; m < cnt.size(); m++)
                         {
@@ -224,16 +224,18 @@ class WarpingFishEye : public Warping
         if (Fixgap_Flag_Neighbour == true)
         {
             int max_distance = 2;
-            for (int i = 0; i < data_->width(); i++)
+            for (int i = 0; i < width; i++)
             {
-                for (int j = 0; j < data_->height(); j++)
+                for (int j = 0; j < height; j++)
                 {
-                    if (painted[j * data_->width() + i])
+                    if (painted[j * width + i])
                     {
                         continue;
                     }
                     std::vector<unsigned char> red(0), green(0), blue(0);
                     std::vector<int> cnt(0);
+
+                    // Search the painted pixels within the max_distance
                     for (int x = i - max_distance / 2;
                          x <= i + max_distance / 2;
                          x++)
@@ -242,12 +244,11 @@ class WarpingFishEye : public Warping
                              y <= j + max_distance / 2;
                              y++)
                         {
-                            if (x < 0 || x >= data_->width() || y < 0 ||
-                                y >= data_->height())
+                            if (x < 0 || x >= width || y < 0 || y >= height)
                             {
                                 continue;
                             }
-                            if (painted[y * data_->width() + x])
+                            if (painted[y * width + x])
                             {
                                 std::vector<unsigned char> pixel =
                                     warped_image.get_pixel(x, y);
@@ -273,6 +274,9 @@ class WarpingFishEye : public Warping
                             }
                         }
                     }
+
+                    // find the most frequent color and give it to the gap
+                    // pixel
                     int maxcnt = 0, maxindex = -1;
                     for (int l = 0; l < cnt.size(); l++)
                     {

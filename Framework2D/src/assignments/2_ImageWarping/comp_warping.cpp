@@ -8,7 +8,6 @@
 
 namespace USTC_CG
 {
-using uchar = unsigned char;
 
 /**
  * @brief Construct a new CompWarping object
@@ -25,6 +24,9 @@ CompWarping::CompWarping(const std::string& label, const std::string& filename)
     }
 }
 
+/**
+ * @brief Draw the image, not about the toolbar
+ */
 void CompWarping::draw()
 {
     // Draw the image, not about the toolbar
@@ -43,22 +45,23 @@ void CompWarping::draw()
 void CompWarping::invert()
 {
     // Invert the color, change both the hue and the brightness
-    for (int i = 0; i < data_->width(); ++i)
+    for (int i = 0; i < data_->width(); i++)
     {
-        for (int j = 0; j < data_->height(); ++j)
+        for (int j = 0; j < data_->height(); j++)
         {
             const auto color = data_->get_pixel(i, j);
             data_->set_pixel(
                 i,
                 j,
-                { static_cast<uchar>(255 - color[0]),
-                  static_cast<uchar>(255 - color[1]),
-                  static_cast<uchar>(255 - color[2]) });
+                { static_cast<unsigned char>(255 - color[0]),
+                  static_cast<unsigned char>(255 - color[1]),
+                  static_cast<unsigned char>(255 - color[2]) });
         }
     }
     // After change the image, we should reload the image data to the renderer
     update();
 }
+
 /**
  * @brief Mirror the image
  * Simply just swap the pixels
@@ -70,49 +73,18 @@ void CompWarping::mirror(bool is_horizontal, bool is_vertical)
     Image image_tmp(*data_);
     int width = data_->width();
     int height = data_->height();
-
-    if (is_horizontal)
+    for (int i = 0; i < width; i++)
     {
-        if (is_vertical)
+        for (int j = 0; j < height; j++)
         {
-            for (int i = 0; i < width; ++i)
-            {
-                for (int j = 0; j < height; ++j)
-                {
-                    data_->set_pixel(
-                        i,
-                        j,
-                        image_tmp.get_pixel(width - 1 - i, height - 1 - j));
-                }
-            }
-        }
-        else
-        {
-            for (int i = 0; i < width; ++i)
-            {
-                for (int j = 0; j < height; ++j)
-                {
-                    data_->set_pixel(
-                        i, j, image_tmp.get_pixel(width - 1 - i, j));
-                }
-            }
+            data_->set_pixel(
+                i,
+                j,
+                image_tmp.get_pixel(
+                    i + (int)is_horizontal * (width - 1 - 2 * i),
+                    j + (int)is_vertical * (height - 1 - 2 * j)));
         }
     }
-    else
-    {
-        if (is_vertical)
-        {
-            for (int i = 0; i < width; ++i)
-            {
-                for (int j = 0; j < height; ++j)
-                {
-                    data_->set_pixel(
-                        i, j, image_tmp.get_pixel(i, height - 1 - j));
-                }
-            }
-        }
-    }
-
     // After change the image, we should reload the image data to the renderer
     update();
 }
@@ -121,21 +93,29 @@ void CompWarping::mirror(bool is_horizontal, bool is_vertical)
  * @brief Convert the image to gray scale
  * i.e., (r, g, b) -> (gray, gray, gray), of which gray = (r + g + b) / 3
  * Other algorithms: Gray = R*0.299 + G*0.587 + B*0.114
+ * @param method The method to convert to gray scale. 0 for average, 1 for
+ * weighted average
  */
-void CompWarping::gray_scale()
+void CompWarping::gray_scale(int method)
 {
-    for (int i = 0; i < data_->width(); ++i)
+    int width = data_->width();
+    int height = data_->height();
+    for (int i = 0; i < width; i++)
     {
-        for (int j = 0; j < data_->height(); ++j)
+        for (int j = 0; j < height; j++)
         {
-            const auto color = data_->get_pixel(i, j);
-            uchar gray_value = (color[0] + color[1] + color[2]) / 3;
+            std::vector<unsigned char> pixel = data_->get_pixel(i, j);
+            unsigned char gray_value;
+            if (method = 0)
+            {
+                gray_value = (pixel[0] + pixel[1] + pixel[2]) / 3;
+            }
+            if (method = 1)
+            {
+                gray_value =
+                    pixel[0] * 0.299 + pixel[1] * 0.587 + pixel[2] * 0.114;
+            }
             data_->set_pixel(i, j, { gray_value, gray_value, gray_value });
-            // uchar gray_value = color[0] * 0.299 + color[1] * 0.587 + color[2]
-            // * 0.114;
-
-            // data_->set_pixel(i, j, { gray_value, gray_value,
-            // gray_value });
         }
     }
     // After change the image, we should reload the image data to the renderer
@@ -148,6 +128,10 @@ void CompWarping::gray_scale()
  */
 void CompWarping::set_warping_method(int method)
 {
+    if (warping_)
+    {
+        warping_.reset();
+    }
     switch (method)
     {
         case 1: warping_ = std::make_shared<WarpingIDW>(); break;
@@ -168,29 +152,45 @@ void CompWarping::warping()
     // encapsulation, inheritance, and polymorphism features of C++. More files
     // like "*.h", "*.cpp" can be added to this directory or anywhere you like.
 
+    int width = data_->width();
+    int height = data_->height();
     // Create a new image to store the result
-    Image warped_image(*data_);
+    Image warped_image(width, height, data_->channels());
     // Initialize the color of result image
-    for (int y = 0; y < data_->height(); ++y)
+    for (int x = 0; x < width; x++)
     {
-        for (int x = 0; x < data_->width(); ++x)
+        for (int y = 0; y < height; y++)
         {
             warped_image.set_pixel(x, y, { 0, 0, 0 });
         }
     }
     // Apply warping function and store the result in warped_image
     warping_->warping(
-        data_, warped_image, start_points_, end_points_, inverse_flag, fixgap_flag_ann, fixgap_flag_neighbour);
+        data_,
+        warped_image,
+        start_points_,
+        end_points_,
+        inverse_flag,
+        fixgap_flag_ann,
+        fixgap_flag_neighbour);
     *data_ = std::move(warped_image);
     update();
 }
 
+/**
+ * @brief Restore the image to the original one
+ */
 void CompWarping::restore()
 {
     *data_ = *back_up_;
     update();
 }
 
+/**
+ * @brief Enable the selecting of points for warping, means showing the points
+ * on screen
+ * @param flag Whether to enable the selecting of points
+ */
 void CompWarping::enable_selecting(bool flag)
 {
     flag_enable_selecting_points_ = flag;
@@ -251,6 +251,9 @@ void CompWarping::select_points()
     }
 }
 
+/**
+ * @brief Initialize the selections, clear the start and end points
+ */
 void CompWarping::init_selections()
 {
     start_points_.clear();
