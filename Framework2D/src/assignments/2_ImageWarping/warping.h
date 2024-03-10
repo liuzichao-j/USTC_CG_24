@@ -22,6 +22,7 @@ class Warping
         std::vector<ImVec2> &start_points,
         std::vector<ImVec2> &end_points,
         bool Inverse_Flag = false,
-        bool Fixgap_Flag = false) = 0;
+        bool Fixgap_Flag_ANN = false,
+        bool Fixgap_Flag_Neighbour = false) = 0;
 };
 }  // namespace USTC_CG

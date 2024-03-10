@@ -20,7 +20,8 @@ class WarpingIDW : public Warping
      * @param start_points The start points for warping.
      * @param end_points The end points for warping.
      * @param Inverse_Flag Whether to use the inverse warping function.
-     * @param Fixgap_Flag Whether to fix the gap in normal warping function.
+     * @param Fixgap_Flag_ANN Whether to fix the gaps using ann method.
+     * @param Fixgap_Flag_Neighbour Whether to fix the gaps using neighbour
      */
     void warping(
         std::shared_ptr<Image> &data_,
@@ -28,7 +29,8 @@ class WarpingIDW : public Warping
         std::vector<ImVec2> &start_points,
         std::vector<ImVec2> &end_points,
         bool Inverse_Flag = false,
-        bool Fixgap_Flag = false) override
+        bool Fixgap_Flag_ANN = false,
+        bool Fixgap_Flag_Neighbour = false) override
     {
         /**
          * Given f(p_i) = (q_i), Use f(p) = Sum_i (w_i(p) * f_i(p)).
@@ -158,7 +160,8 @@ class WarpingIDW : public Warping
         else if (n == 2)
         {
             // Fix the gap by inverse method
-            if (Fixgap_Flag == true && Inverse_Flag == false)
+            if ((Fixgap_Flag_ANN == true || Fixgap_Flag_Neighbour == true) &&
+                Inverse_Flag == false)
             {
                 std::swap(start_points, end_points);
             }
@@ -194,7 +197,8 @@ class WarpingIDW : public Warping
                                       sigma_2 / (sigma_1 + sigma_2) *
                                           (end_points[1].y +
                                            d_2 * (old_y - start_points[1].y)));
-                    if (Inverse_Flag == true || Fixgap_Flag == true)
+                    if (Inverse_Flag == true || Fixgap_Flag_ANN == true ||
+                        Fixgap_Flag_Neighbour == true)
                     {
                         if (new_x >= 0 && new_x < data_->width() &&
                             new_y >= 0 && new_y < data_->height())
@@ -214,7 +218,8 @@ class WarpingIDW : public Warping
                     }
                 }
             }
-            if (Fixgap_Flag == true && Inverse_Flag == false)
+            if ((Fixgap_Flag_ANN == true || Fixgap_Flag_Neighbour == true) &&
+                Inverse_Flag == false)
             {
                 std::swap(start_points, end_points);
             }
@@ -334,6 +339,9 @@ class WarpingIDW : public Warping
                 d_matrix[i](1, 1) = x(3);
             }
 
+            // Detect which new pixel is painted
+            std::vector<bool> painted(data_->width() * data_->height(), false);
+
             // Got D matrix, calculate f(p) for each pixel
             for (int old_x = 0; old_x < data_->width(); old_x++)
             {
@@ -403,9 +411,12 @@ class WarpingIDW : public Warping
                                 (int)new_x,
                                 (int)new_y,
                                 data_->get_pixel(old_x, old_y));
-                            if (Fixgap_Flag == true)
+                            painted[(int)new_y * data_->width() + (int)new_x] =
+                                true;
+                            if (Fixgap_Flag_ANN == true)
                             {
-                                float p[2] = { (int)new_x, (int)new_y };
+                                float p[2] = { (float)(int)new_x,
+                                               (float)(int)new_y };
                                 index.add_item(
                                     (int)new_y * data_->width() + (int)new_x,
                                     p);
@@ -429,47 +440,46 @@ class WarpingIDW : public Warping
                 }
             }
 
+            float oldmindis = distance_matrix(0, 1), newmaxdis = 0;
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    if (i != j && distance_matrix(i, j) < oldmindis)
+                    {
+                        oldmindis = distance_matrix(i, j);
+                    }
+                }
+            }
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    float dis = std::sqrt(
+                        std::pow(end_points[i].x - end_points[j].x, 2) +
+                        std::pow(end_points[i].y - end_points[j].y, 2));
+                    if (dis > newmaxdis)
+                    {
+                        newmaxdis = dis;
+                    }
+                }
+            }
+            float max_distance = newmaxdis / oldmindis;
+            // max distance to search, avoid paint at non-sight area
+            // choose max distance as the ratio of expansion
+
             // Fix the gap by ann method
-            if (Fixgap_Flag == true && indexcnt)
+            if (Fixgap_Flag_ANN == true && indexcnt)
             {
                 index.build((int)log2(indexcnt));
                 int k = 3;  // search k nearest points
-                float oldmindis = distance_matrix(0, 1), newmaxdis = 0;
-                for (int i = 0; i < n; i++)
-                {
-                    for (int j = 0; j < n; j++)
-                    {
-                        if (i != j && distance_matrix(i, j) < oldmindis)
-                        {
-                            oldmindis = distance_matrix(i, j);
-                        }
-                    }
-                }
-                for (int i = 0; i < n; i++)
-                {
-                    for (int j = 0; j < n; j++)
-                    {
-                        float dis = std::sqrt(
-                            std::pow(end_points[i].x - end_points[j].x, 2) +
-                            std::pow(end_points[i].y - end_points[j].y, 2));
-                        if (dis > newmaxdis)
-                        {
-                            newmaxdis = dis;
-                        }
-                    }
-                }
-                float max_distance = newmaxdis / oldmindis;
-                // max distance to search, avoid paint at non-sight area
-                // choose max distance as the ratio of expansion
                 std::vector<int> closest_points;
                 std::vector<float> distances;
                 for (int i = 0; i < data_->width(); i++)
                 {
                     for (int j = 0; j < data_->height(); j++)
                     {
-                        if (warped_image.get_pixel(i, j)[0] != 0 ||
-                            warped_image.get_pixel(i, j)[1] != 0 ||
-                            warped_image.get_pixel(i, j)[2] != 0)
+                        if (painted[j * data_->width() + i] == true)
                         {
                             // Painted, continue
                             continue;
@@ -484,11 +494,6 @@ class WarpingIDW : public Warping
                         std::vector<int> cnt(0);
                         for (int l = 0; l < distances.size(); l++)
                         {
-                            if (fabs(distances[l]) < 1e-6)
-                            {
-                                // if it is painted black, break
-                                break;
-                            }
                             if (distances[l] < max_distance)
                             {
                                 // Within the max distance, count the color
@@ -547,6 +552,76 @@ class WarpingIDW : public Warping
             }
             index.unbuild();
             index.reinitialize();
+
+            if (Fixgap_Flag_Neighbour == true)
+            {
+                for (int i = 0; i < data_->width(); i++)
+                {
+                    for (int j = 0; j < data_->height(); j++)
+                    {
+                        if (painted[j * data_->width() + i])
+                        {
+                            continue;
+                        }
+                        std::vector<unsigned char> red(0), green(0), blue(0);
+                        std::vector<int> cnt(0);
+                        for (int x = i - max_distance / 2;
+                             x <= i + max_distance / 2;
+                             x++)
+                        {
+                            for (int y = j - max_distance / 2;
+                                 y <= j + max_distance / 2;
+                                 y++)
+                            {
+                                if (x >= 0 && x < data_->width() && y >= 0 &&
+                                    y < data_->height())
+                                {
+                                    if (painted[y * data_->width() + x])
+                                    {
+                                        std::vector<unsigned char> pixel =
+                                            warped_image.get_pixel(x, y);
+                                        bool flag = false;
+                                        for (int m = 0; m < cnt.size(); m++)
+                                        {
+                                            if (pixel[0] == red[m] &&
+                                                pixel[1] == green[m] &&
+                                                pixel[2] == blue[m])
+                                            {
+                                                flag = true;
+                                                cnt[m]++;
+                                                break;
+                                            }
+                                        }
+                                        if (flag == false)
+                                        {
+                                            red.push_back(pixel[0]);
+                                            green.push_back(pixel[1]);
+                                            blue.push_back(pixel[2]);
+                                            cnt.push_back(1);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        int maxcnt = 0, maxindex = -1;
+                        for (int l = 0; l < cnt.size(); l++)
+                        {
+                            if (cnt[l] > maxcnt)
+                            {
+                                maxcnt = cnt[l];
+                                maxindex = l;
+                            }
+                        }
+                        if (maxindex != -1)
+                        {
+                            std::vector<unsigned char> pixel = {
+                                red[maxindex], green[maxindex], blue[maxindex]
+                            };
+                            warped_image.set_pixel(i, j, pixel);
+                        }
+                    }
+                }
+            }
         }
 
         // Get it back for further use

@@ -180,7 +180,7 @@ void CompWarping::warping()
     }
     // Apply warping function and store the result in warped_image
     warping_->warping(
-        data_, warped_image, start_points_, end_points_, inverse_flag, fixgap_flag);
+        data_, warped_image, start_points_, end_points_, inverse_flag, fixgap_flag_ann, fixgap_flag_neighbour);
     *data_ = std::move(warped_image);
     update();
 }

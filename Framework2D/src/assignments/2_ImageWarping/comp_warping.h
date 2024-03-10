@@ -33,7 +33,8 @@ class CompWarping : public ImageEditor
     // Whether to use the inverse warping function, default is false. 
     bool inverse_flag = false;
     // Whether to fix the gaps in normal mode, default is false.
-    bool fixgap_flag = false;
+    bool fixgap_flag_ann = false;
+    bool fixgap_flag_neighbour = false;
 
     // Whether to show the points
     bool flag_enable_selecting_points_ = false;

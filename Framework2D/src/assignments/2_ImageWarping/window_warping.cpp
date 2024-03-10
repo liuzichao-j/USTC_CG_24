@@ -64,75 +64,89 @@ void ImageWarping::draw_toolbar()
             ImGui::EndMenu();
         }
         ImGui::Separator();
-        if (ImGui::MenuItem("Invert") && p_image_)
-        {
-            p_image_->invert();
-        }
-        if (ImGui::MenuItem("Mirror") && p_image_)
-        {
-            p_image_->mirror(true, false);
-        }
-        if (ImGui::MenuItem("GrayScale") && p_image_)
-        {
-            p_image_->gray_scale();
-        }
-        ImGui::Separator();
-        if (ImGui::BeginMenu("Points"))
-        {
-            if (ImGui::MenuItem("Select Points") && p_image_)
-            {
-                p_image_->enable_selecting(true);
-            }
-            if (ImGui::MenuItem("Reset Points") && p_image_)
-            {
-                p_image_->init_selections();
-            }
-            if (ImGui::MenuItem("Hide Points") && p_image_)
-            {
-                p_image_->enable_selecting(false);
-            }
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Warping"))
-        {
-            if (ImGui::MenuItem("FishEye") && p_image_)
-            {
-                p_image_->set_warping_method(0);
-                p_image_->enable_selecting(false);
-                p_image_->warping();
-            }
-            ImGui::Separator();
-            // HW2_TODO: You can add more interactions for IDW, RBF, etc.
-            if (ImGui::MenuItem("IDW") && p_image_)
-            {
-                p_image_->set_warping_method(1);
-                p_image_->enable_selecting(false);
-                p_image_->warping();
-            }
-            if (ImGui::MenuItem("RBF") && p_image_)
-            {
-                p_image_->set_warping_method(2);
-                p_image_->enable_selecting(false);
-                p_image_->warping();
-            }
-            ImGui::EndMenu();
-        }
-        ImGui::Separator();
-        if (ImGui::MenuItem("Restore") && p_image_)
-        {
-            p_image_->restore();
-        }
-        ImGui::Separator();
         if (p_image_)
         {
-            ImGui::Checkbox("Fix gaps (Inverse Warping)", &p_image_->inverse_flag);
-            if (p_image_->inverse_flag == false)
+            if (ImGui::MenuItem("Invert"))
             {
-                ImGui::Checkbox("Fix gaps (ANN, very slow)", &p_image_->fixgap_flag);
+                p_image_->invert();
             }
-            else
+            if (ImGui::MenuItem("Mirror"))
             {
-                p_image_->fixgap_flag = false;
+                p_image_->mirror(true, false);
+            }
+            if (ImGui::MenuItem("GrayScale"))
+            {
+                p_image_->gray_scale();
+            }
+            ImGui::Separator();
+            if (ImGui::BeginMenu("Points"))
+            {
+                if (ImGui::MenuItem("Select Points") && p_image_)
+                {
+                    p_image_->enable_selecting(true);
+                }
+                if (ImGui::MenuItem("Reset Points") && p_image_)
+                {
+                    p_image_->init_selections();
+                }
+                if (ImGui::MenuItem("Hide Points") && p_image_)
+                {
+                    p_image_->enable_selecting(false);
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Warping"))
+            {
+                if (ImGui::MenuItem("FishEye") && p_image_)
+                {
+                    p_image_->set_warping_method(0);
+                    p_image_->enable_selecting(false);
+                    p_image_->warping();
+                }
+                ImGui::Separator();
+                // HW2_TODO: You can add more interactions for IDW, RBF, etc.
+                if (ImGui::MenuItem("IDW") && p_image_)
+                {
+                    p_image_->set_warping_method(1);
+                    p_image_->enable_selecting(false);
+                    p_image_->warping();
+                }
+                if (ImGui::MenuItem("RBF") && p_image_)
+                {
+                    p_image_->set_warping_method(2);
+                    p_image_->enable_selecting(false);
+                    p_image_->warping();
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Restore") && p_image_)
+            {
+                p_image_->restore();
+            }
+            ImGui::Separator();
+            if (ImGui::BeginMenu("Fix gaps"))
+            {
+                ImGui::Checkbox("Inverse Warping", &p_image_->inverse_flag);
+                if (p_image_->inverse_flag == false)
+                {
+                    if (!p_image_->fixgap_flag_ann)
+                    {
+                        ImGui::Checkbox(
+                            "Neighbour", &p_image_->fixgap_flag_neighbour);
+                    }
+                    if (!p_image_->fixgap_flag_neighbour)
+                    {
+                        ImGui::Checkbox(
+                            "ANN (very slow)", &p_image_->fixgap_flag_ann);
+                    }
+                }
+                else
+                {
+                    p_image_->fixgap_flag_ann = false;
+                    p_image_->fixgap_flag_neighbour = false;
+                }
+                ImGui::EndMenu();
             }
         }
         ImGui::EndMainMenuBar();
