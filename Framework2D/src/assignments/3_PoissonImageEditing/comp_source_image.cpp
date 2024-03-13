@@ -5,32 +5,48 @@
 
 namespace USTC_CG
 {
-using uchar = unsigned char;
-
+/**
+ * @brief Construct a new CompSourceImage::CompSourceImage object. Set
+ * selected_region_ as a binary image (0 or 255) as the same size as the image.
+ */
 CompSourceImage::CompSourceImage(
     const std::string& label,
     const std::string& filename)
     : ImageEditor(label, filename)
 {
     if (data_)
+    {
         selected_region_ =
             std::make_shared<Image>(data_->width(), data_->height(), 1);
+    }
 }
 
+/**
+ * @brief Draw the source image and the selected region.
+ */
 void CompSourceImage::draw()
 {
     // Draw the image
     ImageEditor::draw();
     // Draw selected region
     if (flag_enable_selecting_region_)
+    {
         select_region();
+    }
 }
 
+/**
+ * @brief Enable or disable the region selection.
+ * @param flag True for enabling, false for disabling.
+ */
 void CompSourceImage::enable_selecting(bool flag)
 {
     flag_enable_selecting_region_ = flag;
 }
 
+/**
+ * @brief Select the region in the source image.
+ */
 void CompSourceImage::select_region()
 {
     /// Invisible button over the canvas to capture mouse interactions.
@@ -67,16 +83,22 @@ void CompSourceImage::select_region()
         {
             draw_status_ = false;
             // Update the selected region.
+
             // HW3_TODO(optional): For other types of closed shapes, the most
             // important part in region selection is to find the interior pixels
             // of the region.
             // We give an example of rectangle here.
-            //
+
             // For polygon or freehand regions, you should inplement the
             // "scanning line" algorithm, which is a well-known algorithm in CG.
+
             for (int i = 0; i < selected_region_->width(); ++i)
+            {
                 for (int j = 0; j < selected_region_->height(); ++j)
+                {
                     selected_region_->set_pixel(i, j, { 0 });
+                }
+            }
             switch (region_type_)
             {
                 case USTC_CG::CompSourceImage::kDefault: break;
@@ -91,6 +113,8 @@ void CompSourceImage::select_region()
                              ++j)
                         {
                             selected_region_->set_pixel(i, j, { 255 });
+                            // Select the region by setting the pixel value to
+                            // 255.
                         }
                     }
                     break;
@@ -111,20 +135,37 @@ void CompSourceImage::select_region()
         case USTC_CG::CompSourceImage::kRect:
         {
             if (e.x > s.x && e.y > s.y)
+            {
                 draw_list->AddRect(s, e, IM_COL32(255, 0, 0, 255), 2.0f);
+            }
             break;
         }
         default: break;
     }
 }
+
+/**
+ * @brief Get the selected region.
+ * @return The Image selected_region_ with binary values (0 or 255).
+ */
 std::shared_ptr<Image> CompSourceImage::get_region()
 {
     return selected_region_;
 }
+
+/**
+ * @brief Get original image data.
+ * @return The Image data_.
+ */
 std::shared_ptr<Image> CompSourceImage::get_data()
 {
     return data_;
 }
+
+/**
+ * @brief Get the start position of the source image.
+ * @return The start position of the source image, in the form of ImVec2.
+ */
 ImVec2 CompSourceImage::get_position() const
 {
     return start_;

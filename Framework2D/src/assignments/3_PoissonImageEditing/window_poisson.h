@@ -2,9 +2,9 @@
 
 #include <memory>
 
-#include "view/window.h"
 #include "comp_source_image.h"
 #include "comp_target_image.h"
+#include "view/window.h"
 
 namespace USTC_CG
 {

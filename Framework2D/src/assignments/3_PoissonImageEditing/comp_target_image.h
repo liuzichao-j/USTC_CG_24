@@ -13,7 +13,8 @@ class CompTargetImage : public ImageEditor
     {
         kDefault = 0,
         kPaste = 1,
-        kSeamless = 2
+        kSeamless = 2, 
+        kMixedSeamless = 3
     };
 
     explicit CompTargetImage(
@@ -31,6 +32,7 @@ class CompTargetImage : public ImageEditor
     // HW3_TODO: Add more types of cloning
     void set_paste();
     void set_seamless();
+    void set_mixed_seamless();
     // The clone function
     void clone();
 

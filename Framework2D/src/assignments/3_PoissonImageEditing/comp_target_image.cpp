@@ -4,17 +4,20 @@
 
 namespace USTC_CG
 {
-using uchar = unsigned char;
-
 CompTargetImage::CompTargetImage(
     const std::string& label,
     const std::string& filename)
     : ImageEditor(label, filename)
 {
     if (data_)
+    {
         back_up_ = std::make_shared<Image>(*data_);
+    }
 }
 
+/**
+ * @brief Draw the target image and the invisible button for mouse interaction.
+ */
 void CompTargetImage::draw()
 {
     // Draw the image
@@ -43,7 +46,9 @@ void CompTargetImage::draw()
         mouse_position_ =
             ImVec2(io.MousePos.x - position_.x, io.MousePos.y - position_.y);
         if (flag_realtime_updating)
+        {
             clone();
+        }
         if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
         {
             edit_status_ = false;
@@ -51,32 +56,60 @@ void CompTargetImage::draw()
     }
 }
 
+/**
+ * @brief Set the source image for the target image, for easy access when
+ * cloning.
+ */
 void CompTargetImage::set_source(std::shared_ptr<CompSourceImage> source)
 {
     source_image_ = source;
 }
 
+/**
+ * @brief Set whether to update the target image in real time.
+ */
 void CompTargetImage::set_realtime(bool flag)
 {
     flag_realtime_updating = flag;
 }
 
+/**
+ * @brief Restore the target image to the original state.
+ */
 void CompTargetImage::restore()
 {
     *data_ = *back_up_;
     update();
 }
 
+/**
+ * @brief Set the type of cloning to paste.
+ */
 void CompTargetImage::set_paste()
 {
     clone_type_ = kPaste;
 }
 
+/**
+ * @brief Set the type of cloning to seamless.
+ */
 void CompTargetImage::set_seamless()
 {
     clone_type_ = kSeamless;
 }
 
+/**
+ * @brief Set the type of cloning to mixed seamless.
+ */
+void CompTargetImage::set_mixed_seamless()
+{
+    clone_type_ = kMixedSeamless;
+}
+
+/**
+ * @brief Clone the selected region from the source image to the target image.
+ * Use different methods for different types of cloning.
+ */
 void CompTargetImage::clone()
 {
     // The implementation of different types of cloning

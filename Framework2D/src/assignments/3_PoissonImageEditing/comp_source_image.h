@@ -11,7 +11,9 @@ class CompSourceImage : public ImageEditor
     enum RegionType
     {
         kDefault = 0,
-        kRect = 1
+        kRect = 1, 
+        kPolygon = 2,
+        kFreehand = 3
     };
 
     explicit CompSourceImage(
@@ -38,5 +40,4 @@ class CompSourceImage : public ImageEditor
     bool flag_enable_selecting_region_ = false;
     bool draw_status_ = false;
 };
-
 }  // namespace USTC_CG
