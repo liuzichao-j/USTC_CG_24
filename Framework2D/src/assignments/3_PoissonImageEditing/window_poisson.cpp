@@ -22,16 +22,26 @@ void WindowPoisson::draw()
 {
     draw_toolbar();
     if (flag_open_target_file_dialog_)
+    {
         draw_open_target_image_file_dialog();
+    }
     if (flag_open_source_file_dialog_ && p_target_)
+    {
         draw_open_source_image_file_dialog();
+    }
     if (flag_save_file_dialog_ && p_target_)
+    {
         draw_save_image_file_dialog();
+    }
 
     if (p_target_)
+    {
         draw_target();
+    }
     if (p_source_)
+    {
         draw_source();
+    }
 }
 
 /**
@@ -82,6 +92,26 @@ void WindowPoisson::draw_toolbar()
             {
                 p_source_->enable_selecting(selectable);
             }
+            if (p_source_ && selectable)
+            {
+                if (ImGui::BeginMenu("Region Type"))
+                {
+                    if (ImGui::MenuItem("Rectangle"))
+                    {
+                        p_source_->set_region_type(CompSourceImage::kRect);
+                    }
+                    if (ImGui::MenuItem("Polygon"))
+                    {
+                        p_source_->set_region_type(CompSourceImage::kPolygon);
+                    }
+                    if (ImGui::MenuItem("Freehand"))
+                    {
+                        p_source_->set_region_type(CompSourceImage::kFreehand);
+                    }
+                    ImGui::EndMenu();
+                }
+            }
+            ImGui::Separator();
             static bool realtime = false;
             ImGui::Checkbox("Realtime", &realtime);
             add_tooltips(

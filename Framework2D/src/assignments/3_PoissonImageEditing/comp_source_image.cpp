@@ -45,6 +45,15 @@ void CompSourceImage::enable_selecting(bool flag)
 }
 
 /**
+ * @brief Set the region type for selection.
+ * @param type The type of region to be selected.
+ */
+void CompSourceImage::set_region_type(RegionType type)
+{
+    region_type_ = type;
+}
+
+/**
  * @brief Select the region in the source image.
  */
 void CompSourceImage::select_region()
@@ -121,6 +130,7 @@ void CompSourceImage::select_region()
                 }
                 default: break;
             }
+            init_id(region_type_);
         }
     }
 
@@ -169,5 +179,80 @@ std::shared_ptr<Image> CompSourceImage::get_data()
 ImVec2 CompSourceImage::get_position() const
 {
     return start_;
+}
+
+/**
+ * @brief Initialize the selected region by giving every point an id.
+ * @param type The type of region to be selected.
+ */
+void CompSourceImage::init_id(RegionType type)
+{
+    point_to_id_.clear();
+    id_to_point_.clear();
+    point_to_id_.resize(selected_region_->width());
+    for (int i = 0; i < selected_region_->width(); i++)
+    {
+        point_to_id_[i].resize(selected_region_->height());
+    }
+    int id = 1;
+
+    switch (type)
+    {
+        case kRect:
+            for (int i = 0; i < selected_region_->width(); i++)
+            {
+                for (int j = 0; j < selected_region_->height(); j++)
+                {
+                    if (selected_region_->get_pixel(i, j)[0] > 0)
+                    {
+                        point_to_id_[i][j] = id;
+                        id_to_point_.push_back(ImVec2((float)i, (float)j));
+                        id++;
+                    }
+                }
+            }
+            break;
+
+        default: break;
+    }
+}
+
+/**
+ * @brief Get the id of a point in the selected region.
+ * @param point The position of the point.
+ * @return The id of the point, starting from 1. 0 means the point is not in the
+ * selected region.
+ */
+int CompSourceImage::get_id(ImVec2 point)
+{
+    if (point.x >= 0 && point.x < selected_region_->width() && point.y >= 0 &&
+        point.y < selected_region_->height())
+    {
+        return point_to_id_[(int)point.x][(int)point.y];
+    }
+    return 0;
+}
+
+/**
+ * @brief Get the position of an id in the selected region.
+ * @param id The id of the point.
+ * @return The position of the point. If the id is invalid, return (-1, -1).
+ */
+ImVec2 CompSourceImage::get_point(int id)
+{
+    if (id < 0 || id >= id_to_point_.size())
+    {
+        return ImVec2(-1, -1);
+    }
+    return id_to_point_[id];
+}
+
+/**
+ * @brief Get the number of points in the selected region.
+ * @return The number of points in the selected region.
+ */
+int CompSourceImage::get_point_num()
+{
+    return (int)id_to_point_.size();
 }
 }  // namespace USTC_CG

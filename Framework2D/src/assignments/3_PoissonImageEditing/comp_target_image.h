@@ -13,7 +13,7 @@ class CompTargetImage : public ImageEditor
     {
         kDefault = 0,
         kPaste = 1,
-        kSeamless = 2, 
+        kSeamless = 2,
         kMixedSeamless = 3
     };
 
@@ -47,5 +47,4 @@ class CompTargetImage : public ImageEditor
     bool edit_status_ = false;
     bool flag_realtime_updating = false;
 };
-
 }  // namespace USTC_CG
