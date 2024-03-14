@@ -2,6 +2,8 @@
 
 #include "view/comp_image.h"
 
+#include <Eigen/Sparse>
+
 namespace USTC_CG
 {
 class CompSourceImage : public ImageEditor
@@ -11,7 +13,7 @@ class CompSourceImage : public ImageEditor
     enum RegionType
     {
         kDefault = 0,
-        kRect = 1, 
+        kRect = 1,
         kPolygon = 2,
         kFreehand = 3
     };
@@ -43,13 +45,24 @@ class CompSourceImage : public ImageEditor
     // Get the number of points in the selected region
     int get_point_num();
 
+    // Initialize matrix A in advance
+    void init_matrix();
+    // The solver of A
+    void solver(Eigen::VectorXf& b, Eigen::VectorXf& x);
+
    private:
     RegionType region_type_ = kDefault;
     std::shared_ptr<Image> selected_region_;
     ImVec2 start_, end_;
     bool flag_enable_selecting_region_ = false;
     bool draw_status_ = false;
+    
+    // Calculate the id of a point in the selected region
     std::vector<std::vector<int>> point_to_id_;
     std::vector<ImVec2> id_to_point_;
+
+    // Store matrix A and solver
+    Eigen::SparseMatrix<float> A_;
+    Eigen::SimplicialLLT<Eigen::SparseMatrix<float>> solver_;
 };
 }  // namespace USTC_CG

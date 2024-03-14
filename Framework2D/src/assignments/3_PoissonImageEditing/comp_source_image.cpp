@@ -131,6 +131,7 @@ void CompSourceImage::select_region()
                 default: break;
             }
             init_id(region_type_);
+            init_matrix();
         }
     }
 
@@ -255,4 +256,83 @@ int CompSourceImage::get_point_num()
 {
     return (int)id_to_point_.size();
 }
+
+/**
+ * @brief Initialize matrix A in advance.
+ */
+void CompSourceImage::init_matrix()
+{
+    // We have formula: 4*f_p - Sum_{q in N(p) and Omega} f_q = Sum_{q
+    // in N(p) and NonOmega} f_q + 4*g_p - Sum_{q in N(p)} g_q, where
+    // g_p is the source image and f_p is the target image.
+
+    // Things in the left side of the equation are variables.
+
+    int point_num = id_to_point_.size();
+
+    // Sparse matrix A and Triplet to build A.
+    A_.resize(point_num, point_num);
+    // Each point has 5 coefficients at most.
+    std::vector<Eigen::Triplet<float>> triplet;
+    triplet.reserve(point_num * 5);
+
+    for (int i = 0; i < point_num; i++)
+    {
+        // Make the formula coefficient No. i
+        int src_x = (int)id_to_point_[i].x;
+        int src_y = (int)id_to_point_[i].y;
+
+        // Count the number of neighbors
+        int np = 0;
+
+        // For each neighbor of the point
+        for (int j = -1; j <= 1; j++)
+        {
+            for (int k = -1; k <= 1; k++)
+            {
+                if ((abs(j) + abs(k) != 1) || src_x + j < 0 ||
+                    src_x + j >= data_->width() || src_y + k < 0 ||
+                    src_y + k >= data_->height())
+                {
+                    // Only consider 4 neighbors within the image
+                    continue;
+                }
+                int id = get_id(ImVec2(src_x + j, src_y + k));
+                if (id != 0)
+                {
+                    // Coefficient of f_q is -1
+                    triplet.push_back(Eigen::Triplet<float>(i, id - 1, -1));
+                }
+                np++;
+            }
+        }
+        // Coefficient of f_i is np
+        triplet.push_back(Eigen::Triplet<float>(i, i, np));
+    }
+    A_.setFromTriplets(triplet.begin(), triplet.end());
+
+    solver_.compute(A_);
+    if (solver_.info() != Eigen::Success)
+    {
+        // Decomposition failed
+        throw std::exception("Decomposition failed");
+    }
+    return;
+}
+
+/**
+ * @brief The solver of A.
+ * @param b The right-hand side of the equation.
+ * @param x The solution of the equation.
+ */
+void CompSourceImage::solver(Eigen::VectorXf& b, Eigen::VectorXf& x)
+{
+    x = solver_.solve(b);
+    if (solver_.info() != Eigen::Success)
+    {
+        // Solve failed
+        throw std::exception("Solve failed");
+    }
+    return;
+};
 }  // namespace USTC_CG

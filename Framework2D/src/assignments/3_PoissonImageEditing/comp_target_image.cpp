@@ -159,24 +159,14 @@ void CompTargetImage::clone()
             // final RGB color by solving Poisson Equations.
             restore();
 
-            // We have formula: 4*f_p - Sum_{q in N(p) and Omega} f_q = Sum_{q
-            // in N(p) and NonOmega} f_q + 4*g_p - Sum_{q in N(p)} g_q, where
-            // g_p is the source image and f_p is the target image.
+            int point_num = source_image_->get_point_num();
 
-            // Things in the left side of the equation are variables.
-
-            // Sparse matrix A and Triplet to build A.
-            Eigen::SparseMatrix<double> A(
-                source_image_->get_point_num(), source_image_->get_point_num());
-            // Each point has 5 coefficients at most.
-            std::vector<Eigen::Triplet<double>> triplet;
-            triplet.reserve(source_image_->get_point_num() * 5);
-
-            // Vector br, bg, bb for the right side of the equation.
-            Eigen::VectorXd br(source_image_->get_point_num());
-            Eigen::VectorXd bg(source_image_->get_point_num());
-            Eigen::VectorXd bb(source_image_->get_point_num());
-            for (int i = 0; i < source_image_->get_point_num(); i++)
+            // Calculate br, bg, bb and ba, which are the right sides of the equation.
+            Eigen::VectorXf br(point_num);
+            Eigen::VectorXf bg(point_num);
+            Eigen::VectorXf bb(point_num);
+            Eigen::VectorXf ba(point_num);
+            for (int i = 0; i < point_num; i++)
             {
                 // Make the formula No. i. Point is in the coordinate of the
                 // source image.
@@ -189,43 +179,55 @@ void CompTargetImage::clone()
                     (int)(mouse_position_.y - source_image_->get_position().y) +
                     src_y;
 
-                // Coefficient of f_i is 4
-                triplet.push_back(Eigen::Triplet<double>(i, i, 4));
-                // Add to right side
-                br(i) =
-                    4 * source_image_->get_data()->get_pixel(src_x, src_y)[0];
-                bg(i) =
-                    4 * source_image_->get_data()->get_pixel(src_x, src_y)[1];
-                bb(i) =
-                    4 * source_image_->get_data()->get_pixel(src_x, src_y)[2];
+                // Count the number of neighbors
+                int np = 0;
+                // Initialize
+                br(i) = bg(i) = bb(i) = ba(i) = 0;
 
                 // For each neighbor of the point
                 for (int j = -1; j <= 1; j++)
                 {
                     for (int k = -1; k <= 1; k++)
                     {
-                        if ((abs(j) + abs(k) != 1) || (tar_x + j < 0) ||
-                            (tar_x + j >= image_width_) || (tar_y + k < 0) ||
-                            (tar_y + k >= image_height_))
+                        if ((abs(j) + abs(k) != 1) || src_x + j < 0 ||
+                            src_x + j >= source_image_->get_data()->width() ||
+                            src_y + k < 0 ||
+                            src_y + k >= source_image_->get_data()->height())
                         {
                             // Only consider 4 neighbors within the image
                             continue;
                         }
                         int id =
                             source_image_->get_id(ImVec2(src_x + j, src_y + k));
-                        if (id != 0)
-                        {
-                            // Coefficient of f_q is -1
-                            triplet.push_back(
-                                Eigen::Triplet<double>(i, id - 1, -1));
-                        }
-                        else
+                        if (id == 0)
                         {
                             // Add f_q to the right side, which is the edge of
                             // the target image
-                            br(i) += data_->get_pixel(tar_x + j, tar_y + k)[0];
-                            bg(i) += data_->get_pixel(tar_x + j, tar_y + k)[1];
-                            bb(i) += data_->get_pixel(tar_x + j, tar_y + k)[2];
+                            if ((tar_x + j < 0) ||
+                                (tar_x + j >= image_width_) ||
+                                (tar_y + k < 0) || (tar_y + k >= image_height_))
+                            {
+                                // If it is out of the target image, use the source image instead
+                                br(i) += source_image_->get_data()->get_pixel(
+                                    src_x + j, src_y + k)[0];
+                                bg(i) += source_image_->get_data()->get_pixel(
+                                    src_x + j, src_y + k)[1];
+                                bb(i) += source_image_->get_data()->get_pixel(
+                                    src_x + j, src_y + k)[2];
+                                ba(i) += source_image_->get_data()->get_pixel(
+                                    src_x + j, src_y + k)[3];
+                            }
+                            else
+                            {
+                                br(i) +=
+                                    data_->get_pixel(tar_x + j, tar_y + k)[0];
+                                bg(i) +=
+                                    data_->get_pixel(tar_x + j, tar_y + k)[1];
+                                bb(i) +=
+                                    data_->get_pixel(tar_x + j, tar_y + k)[2];
+                                ba(i) +=
+                                    data_->get_pixel(tar_x + j, tar_y + k)[3];
+                            }
                         }
                         // Add g_q to the right side, which represents the
                         // gradient of the source image
@@ -235,34 +237,34 @@ void CompTargetImage::clone()
                             src_x + j, src_y + k)[1];
                         bb(i) -= source_image_->get_data()->get_pixel(
                             src_x + j, src_y + k)[2];
+                        ba(i) -= source_image_->get_data()->get_pixel(
+                            src_x + j, src_y + k)[3];
+                        np++;
                     }
                 }
-            }
-            A.setFromTriplets(triplet.begin(), triplet.end());
-
-            // A and b are ready, first decompose A
-            Eigen::SimplicialLLT<Eigen::SparseMatrix<double>> solver;
-            solver.compute(A);
-            if (solver.info() != Eigen::Success)
-            {
-                // Decomposition failed
-                printf("Decomposition failed\n");
-                return;
+                // Add to right side
+                br(i) +=
+                    np * source_image_->get_data()->get_pixel(src_x, src_y)[0];
+                bg(i) +=
+                    np * source_image_->get_data()->get_pixel(src_x, src_y)[1];
+                bb(i) +=
+                    np * source_image_->get_data()->get_pixel(src_x, src_y)[2];
+                ba(i) +=
+                    np * source_image_->get_data()->get_pixel(src_x, src_y)[3];
             }
 
             // Then solve the linear system
-            Eigen::VectorXd xr = solver.solve(br);
-            Eigen::VectorXd xg = solver.solve(bg);
-            Eigen::VectorXd xb = solver.solve(bb);
-            if (solver.info() != Eigen::Success)
-            {
-                // Solve failed
-                printf("Solve failed\n");
-                return;
-            }
+            Eigen::VectorXf xr;
+            Eigen::VectorXf xg;
+            Eigen::VectorXf xb;
+            Eigen::VectorXf xa;
+            source_image_->solver(br, xr);
+            source_image_->solver(bg, xg);
+            source_image_->solver(bb, xb);
+            source_image_->solver(ba, xa);
 
             // Set the result to the target image
-            for (int i = 0; i < source_image_->get_point_num(); i++)
+            for (int i = 0; i < point_num; i++)
             {
                 int src_x = (int)source_image_->get_point(i).x;
                 int src_y = (int)source_image_->get_point(i).y;
@@ -275,12 +277,23 @@ void CompTargetImage::clone()
                 if (0 <= tar_x && tar_x < image_width_ && 0 <= tar_y &&
                     tar_y < image_height_)
                 {
-                    data_->set_pixel(
-                        tar_x,
-                        tar_y,
-                        { (unsigned char)xr(i),
-                          (unsigned char)xg(i),
-                          (unsigned char)xb(i) });
+                    unsigned char r =
+                        (unsigned char)(xr(i) < 0
+                                            ? 0
+                                            : (xr(i) > 255 ? 255 : xr(i)));
+                    unsigned char g =
+                        (unsigned char)(xg(i) < 0
+                                            ? 0
+                                            : (xg(i) > 255 ? 255 : xg(i)));
+                    unsigned char b =
+                        (unsigned char)(xb(i) < 0
+                                            ? 0
+                                            : (xb(i) > 255 ? 255 : xb(i)));
+                    unsigned char a =
+                        (unsigned char)(xa(i) < 0
+                                            ? 0
+                                            : (xa(i) > 255 ? 255 : xa(i)));
+                    data_->set_pixel(tar_x, tar_y, { r, g, b, a });
                 }
             }
             break;
