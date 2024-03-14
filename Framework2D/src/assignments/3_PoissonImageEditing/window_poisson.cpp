@@ -83,13 +83,22 @@ void WindowPoisson::draw_toolbar()
 
         if (p_target_)
         {
-            static bool selectable = false;
-            ImGui::Checkbox("Select", &selectable);
+            static bool realtime = false;
+            ImGui::Checkbox("Realtime", &realtime);
             add_tooltips(
-                "On: Enable region selection in the source image. Drag left "
-                "mouse to select rectangle (default) in the source.");
+                "On: Enable realtime cloning in the target image, which means "
+                "that you can drag the mouse and the cloning would update "
+                "along the mouse.");
+            p_target_->set_realtime(realtime);
+            ImGui::Separator();
+
+            static bool selectable = false;
             if (p_source_)
             {
+                ImGui::Checkbox("Select", &selectable);
+                add_tooltips(
+                    "On: Enable region selection in the source image. Drag "
+                    "left mouse to select rectangle (default) in the source.");
                 p_source_->enable_selecting(selectable);
             }
             if (p_source_ && selectable)
@@ -111,14 +120,6 @@ void WindowPoisson::draw_toolbar()
                     ImGui::EndMenu();
                 }
             }
-            ImGui::Separator();
-            static bool realtime = false;
-            ImGui::Checkbox("Realtime", &realtime);
-            add_tooltips(
-                "On: Enable realtime cloning in the target image, which means "
-                "that you can drag the mouse and the cloning would update "
-                "along the mouse.");
-            p_target_->set_realtime(realtime);
             ImGui::Separator();
         }
 

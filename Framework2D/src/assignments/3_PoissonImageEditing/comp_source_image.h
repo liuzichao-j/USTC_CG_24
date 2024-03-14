@@ -49,6 +49,7 @@ class CompSourceImage : public ImageEditor
     void init_matrix();
     // The solver of A
     void solver(Eigen::VectorXf& b, Eigen::VectorXf& x);
+    bool is_solver_ready();
 
    private:
     RegionType region_type_ = kDefault;

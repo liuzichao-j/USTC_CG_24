@@ -334,5 +334,18 @@ void CompSourceImage::solver(Eigen::VectorXf& b, Eigen::VectorXf& x)
         throw std::exception("Solve failed");
     }
     return;
+}
+
+/**
+ * @brief Check if the solver is ready.
+ * @return True if the solver is ready, false if not.
+ */
+bool CompSourceImage::is_solver_ready()
+{
+    if (solver_.info() != Eigen::Success)
+    {
+        return false;
+    }
+    return true;
 };
 }  // namespace USTC_CG
