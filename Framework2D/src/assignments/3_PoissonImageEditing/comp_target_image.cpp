@@ -169,10 +169,12 @@ void CompTargetImage::clone()
 
             // Calculate br, bg, bb and ba, which are the right sides of the
             // equation.
-            Eigen::VectorXf br(point_num);
-            Eigen::VectorXf bg(point_num);
-            Eigen::VectorXf bb(point_num);
-            Eigen::VectorXf ba(point_num);
+            Eigen::VectorXf b[4];
+            for (int i = 0; i < 4; i++)
+            {
+                b[i] = Eigen::VectorXf::Zero(point_num);
+            }
+
             for (int i = 0; i < point_num; i++)
             {
                 // Make the formula No. i. Point is in the coordinate of the
@@ -183,9 +185,6 @@ void CompTargetImage::clone()
                                           source_image_->get_position().x);
                 int tar_y = src_y + (int)(mouse_position_.y -
                                           source_image_->get_position().y);
-
-                // Initialize
-                br(i) = bg(i) = bb(i) = ba(i) = 0;
 
                 // For each neighbor of the point
                 for (int j = -1; j <= 1; j++)
@@ -205,60 +204,44 @@ void CompTargetImage::clone()
                         {
                             // Add f_q to the right side, which is the edge of
                             // the target image
-                            if ((tar_x + j < 0) ||
-                                (tar_x + j >= image_width_) ||
-                                (tar_y + k < 0) || (tar_y + k >= image_height_))
+                            if (tar_x + j < 0 || tar_x + j >= image_width_ ||
+                                tar_y + k < 0 || tar_y + k >= image_height_)
                             {
                                 // If it is out of the target image, use the
                                 // source image instead
-                                br(i) += src_data->get_pixel(
-                                    src_x + j, src_y + k)[0];
-                                bg(i) += src_data->get_pixel(
-                                    src_x + j, src_y + k)[1];
-                                bb(i) += src_data->get_pixel(
-                                    src_x + j, src_y + k)[2];
-                                ba(i) += src_data->get_pixel(
-                                    src_x + j, src_y + k)[3];
+                                for (int l = 0; l < 4; l++)
+                                {
+                                    b[l](i) += src_data->get_pixel(
+                                        src_x + j, src_y + k)[l];
+                                }
                             }
                             else
                             {
-                                br(i) +=
-                                    data_->get_pixel(tar_x + j, tar_y + k)[0];
-                                bg(i) +=
-                                    data_->get_pixel(tar_x + j, tar_y + k)[1];
-                                bb(i) +=
-                                    data_->get_pixel(tar_x + j, tar_y + k)[2];
-                                ba(i) +=
-                                    data_->get_pixel(tar_x + j, tar_y + k)[3];
+                                for (int l = 0; l < 4; l++)
+                                {
+                                    b[l](i) += data_->get_pixel(
+                                        tar_x + j, tar_y + k)[l];
+                                }
                             }
                         }
                         // Add g_q to the right side, which represents the
                         // gradient of the source image
-                        br(i) +=
-                            (src_data->get_pixel(src_x, src_y)[0] -
-                             src_data->get_pixel(src_x + j, src_y + k)[0]);
-                        bg(i) +=
-                            (src_data->get_pixel(src_x, src_y)[1] -
-                             src_data->get_pixel(src_x + j, src_y + k)[1]);
-                        bb(i) +=
-                            (src_data->get_pixel(src_x, src_y)[2] -
-                             src_data->get_pixel(src_x + j, src_y + k)[2]);
-                        ba(i) +=
-                            (src_data->get_pixel(src_x, src_y)[3] -
-                             src_data->get_pixel(src_x + j, src_y + k)[3]);
+                        for (int l = 0; l < 4; l++)
+                        {
+                            b[l](i) +=
+                                (src_data->get_pixel(src_x, src_y)[l] -
+                                 src_data->get_pixel(src_x + j, src_y + k)[l]);
+                        }
                     }
                 }
             }
 
             // Then solve the linear system
-            Eigen::VectorXf xr;
-            Eigen::VectorXf xg;
-            Eigen::VectorXf xb;
-            Eigen::VectorXf xa;
-            source_image_->solver(br, xr);
-            source_image_->solver(bg, xg);
-            source_image_->solver(bb, xb);
-            source_image_->solver(ba, xa);
+            Eigen::VectorXf x[4];
+            for (int i = 0; i < 4; i++)
+            {
+                source_image_->solver(b[i], x[i]);
+            }
 
             // Set the result to the target image
             for (int i = 0; i < point_num; i++)
@@ -274,23 +257,15 @@ void CompTargetImage::clone()
                 if (0 <= tar_x && tar_x < image_width_ && 0 <= tar_y &&
                     tar_y < image_height_)
                 {
-                    unsigned char r =
-                        (unsigned char)(xr(i) < 0
-                                            ? 0
-                                            : (xr(i) > 255 ? 255 : xr(i)));
-                    unsigned char g =
-                        (unsigned char)(xg(i) < 0
-                                            ? 0
-                                            : (xg(i) > 255 ? 255 : xg(i)));
-                    unsigned char b =
-                        (unsigned char)(xb(i) < 0
-                                            ? 0
-                                            : (xb(i) > 255 ? 255 : xb(i)));
-                    unsigned char a =
-                        (unsigned char)(xa(i) < 0
-                                            ? 0
-                                            : (xa(i) > 255 ? 255 : xa(i)));
-                    data_->set_pixel(tar_x, tar_y, { r, g, b, a });
+                    std::vector<unsigned char> c(4);
+                    for (int l = 0; l < 4; l++)
+                    {
+                        c[l] = (unsigned char)(x[l](i) < 0
+                                                   ? 0
+                                                   : (x[l](i) > 255 ? 255
+                                                                    : x[l](i)));
+                    }
+                    data_->set_pixel(tar_x, tar_y, c);
                 }
             }
             break;
@@ -309,10 +284,12 @@ void CompTargetImage::clone()
 
             // Calculate br, bg, bb and ba, which are the right sides of the
             // equation.
-            Eigen::VectorXf br(point_num);
-            Eigen::VectorXf bg(point_num);
-            Eigen::VectorXf bb(point_num);
-            Eigen::VectorXf ba(point_num);
+            Eigen::VectorXf b[4];
+            for (int i = 0; i < 4; i++)
+            {
+                b[i] = Eigen::VectorXf::Zero(point_num);
+            }
+
             for (int i = 0; i < point_num; i++)
             {
                 // Make the formula No. i. Point is in the coordinate of the
@@ -325,51 +302,6 @@ void CompTargetImage::clone()
                 int tar_y =
                     (int)(mouse_position_.y - source_image_->get_position().y) +
                     src_y;
-
-                // Initialize
-                br(i) = bg(i) = bb(i) = ba(i) = 0;
-
-                // We need to know if the gradient of the source image is bigger
-                // than the gradient of the target image
-                int d_f = 0, d_g = 0;
-
-                for (int j = -1; j <= 1; j++)
-                {
-                    for (int k = -1; k <= 1; k++)
-                    {
-                        if ((abs(j) + abs(k) != 1) || src_x + j < 0 ||
-                            src_x + j >= src_data->width() || src_y + k < 0 ||
-                            src_y + k >= src_data->height())
-                        {
-                            // Only consider 4 neighbors within the image
-                            continue;
-                        }
-                        for (int l = 0; l < 3; l++)
-                        {
-                            if ((tar_x + j < 0) ||
-                                (tar_x + j >= image_width_) ||
-                                (tar_y + k < 0) || (tar_y + k >= image_height_))
-                            {
-                                d_f += std::pow(
-                                    src_data->get_pixel(
-                                        src_x + j, src_y + k)[l] -
-                                        src_data->get_pixel(src_x, src_y)[l],
-                                    2);
-                            }
-                            else
-                            {
-                                d_f += std::pow(
-                                    data_->get_pixel(tar_x + j, tar_y + k)[l] -
-                                        data_->get_pixel(tar_x, tar_y)[l],
-                                    2);
-                            }
-                            d_g += std::pow(
-                                src_data->get_pixel(src_x + j, src_y + k)[l] -
-                                    src_data->get_pixel(src_x, src_y)[l],
-                                2);
-                        }
-                    }
-                }
 
                 // For each neighbor of the point
                 for (int j = -1; j <= 1; j++)
@@ -389,93 +321,73 @@ void CompTargetImage::clone()
                         {
                             // Add f_q to the right side, which is the edge of
                             // the target image
-                            if ((tar_x + j < 0) ||
-                                (tar_x + j >= image_width_) ||
-                                (tar_y + k < 0) || (tar_y + k >= image_height_))
+                            if (tar_x + j < 0 || tar_x + j >= image_width_ ||
+                                tar_y + k < 0 || tar_y + k >= image_height_)
                             {
                                 // If it is out of the target image, use the
                                 // source image instead
-                                br(i) += src_data->get_pixel(
-                                    src_x + j, src_y + k)[0];
-                                bg(i) += src_data->get_pixel(
-                                    src_x + j, src_y + k)[1];
-                                bb(i) += src_data->get_pixel(
-                                    src_x + j, src_y + k)[2];
-                                ba(i) += src_data->get_pixel(
-                                    src_x + j, src_y + k)[3];
+                                for (int l = 0; l < 4; l++)
+                                {
+                                    b[l](i) += src_data->get_pixel(
+                                        src_x + j, src_y + k)[l];
+                                }
                             }
                             else
                             {
-                                br(i) +=
-                                    data_->get_pixel(tar_x + j, tar_y + k)[0];
-                                bg(i) +=
-                                    data_->get_pixel(tar_x + j, tar_y + k)[1];
-                                bb(i) +=
-                                    data_->get_pixel(tar_x + j, tar_y + k)[2];
-                                ba(i) +=
-                                    data_->get_pixel(tar_x + j, tar_y + k)[3];
+                                for (int l = 0; l < 4; l++)
+                                {
+                                    b[l](i) += data_->get_pixel(
+                                        tar_x + j, tar_y + k)[l];
+                                }
                             }
                         }
                         // Add g_q to the right side, which represents the
                         // gradient of the source image.
 
                         // For mixed situation, we choose the bigger one of the
-                        // two gradients
-                        if (d_f < d_g)
+                        // two gradients, as described in the paper.
+                        if (tar_x + j < 0 || tar_x + j >= image_width_ ||
+                            tar_y + k < 0 || tar_y + k >= image_height_ ||
+                            tar_x < 0 || tar_x >= image_width_ || tar_y < 0 ||
+                            tar_y >= image_height_)
                         {
-                            // As the original seamless method
-                            br(i) +=
-                                (src_data->get_pixel(src_x, src_y)[0] -
-                                 src_data->get_pixel(src_x + j, src_y + k)[0]);
-                            bg(i) +=
-                                (src_data->get_pixel(src_x, src_y)[1] -
-                                 src_data->get_pixel(src_x + j, src_y + k)[1]);
-                            bb(i) +=
-                                (src_data->get_pixel(src_x, src_y)[2] -
-                                 src_data->get_pixel(src_x + j, src_y + k)[2]);
-                            ba(i) +=
-                                (src_data->get_pixel(src_x, src_y)[3] -
-                                 src_data->get_pixel(src_x + j, src_y + k)[3]);
+                            // If not in the image, use source gradient
+                            // instead
+                            for (int l = 0; l < 4; l++)
+                            {
+                                b[l](i) +=
+                                    (src_data->get_pixel(src_x, src_y)[l] -
+                                     src_data->get_pixel(
+                                         src_x + j, src_y + k)[l]);
+                            }
                         }
                         else
                         {
-                            // Replace g_q with f_q
-                            if (tar_x + j < 0 || tar_x + j >= image_width_ ||
-                                tar_y + k < 0 || tar_y + k >= image_height_)
+                            for (int l = 0; l < 4; l++)
                             {
-                                // If not in the image, use source gradient
-                                // instead
-                                br(i) +=
-                                    (src_data->get_pixel(src_x, src_y)[0] -
-                                     src_data->get_pixel(
-                                         src_x + j, src_y + k)[0]);
-                                bg(i) +=
-                                    (src_data->get_pixel(src_x, src_y)[1] -
-                                     src_data->get_pixel(
-                                         src_x + j, src_y + k)[1]);
-                                bb(i) +=
-                                    (src_data->get_pixel(src_x, src_y)[2] -
-                                     src_data->get_pixel(
-                                         src_x + j, src_y + k)[2]);
-                                ba(i) +=
-                                    (src_data->get_pixel(src_x, src_y)[3] -
-                                     src_data->get_pixel(
-                                         src_x + j, src_y + k)[3]);
-                            }
-                            else
-                            {
-                                br(i) +=
-                                    (data_->get_pixel(tar_x, tar_y)[0] -
-                                     data_->get_pixel(tar_x + j, tar_y + k)[0]);
-                                bg(i) +=
-                                    (data_->get_pixel(tar_x, tar_y)[1] -
-                                     data_->get_pixel(tar_x + j, tar_y + k)[1]);
-                                bb(i) +=
-                                    (data_->get_pixel(tar_x, tar_y)[2] -
-                                     data_->get_pixel(tar_x + j, tar_y + k)[2]);
-                                ba(i) +=
-                                    (data_->get_pixel(tar_x, tar_y)[3] -
-                                     data_->get_pixel(tar_x + j, tar_y + k)[3]);
+                                // For each point pair (p, q), we choose the one
+                                // with bigger gradient.
+                                if (fabs(
+                                        data_->get_pixel(tar_x, tar_y)[l] -
+                                        data_->get_pixel(
+                                            tar_x + j, tar_y + k)[l]) >
+                                    fabs(
+                                        src_data->get_pixel(src_x, src_y)[l] -
+                                        src_data->get_pixel(
+                                            src_x + j, src_y + k)[l]))
+                                {
+                                    b[l](i) +=
+                                        (data_->get_pixel(tar_x, tar_y)[l] -
+                                         data_->get_pixel(
+                                             tar_x + j, tar_y + k)[l]);
+                                }
+                                else
+                                {
+                                    b[l](i) +=
+                                        (src_data->get_pixel(src_x, src_y)[l] -
+                                         src_data->get_pixel(
+                                             src_x + j, src_y + k)[l]);
+                                }
                             }
                         }
                     }
@@ -483,14 +395,11 @@ void CompTargetImage::clone()
             }
 
             // Then solve the linear system
-            Eigen::VectorXf xr;
-            Eigen::VectorXf xg;
-            Eigen::VectorXf xb;
-            Eigen::VectorXf xa;
-            source_image_->solver(br, xr);
-            source_image_->solver(bg, xg);
-            source_image_->solver(bb, xb);
-            source_image_->solver(ba, xa);
+            Eigen::VectorXf x[4];
+            for (int i = 0; i < 4; i++)
+            {
+                source_image_->solver(b[i], x[i]);
+            }
 
             // Set the result to the target image
             for (int i = 0; i < point_num; i++)
@@ -506,23 +415,15 @@ void CompTargetImage::clone()
                 if (0 <= tar_x && tar_x < image_width_ && 0 <= tar_y &&
                     tar_y < image_height_)
                 {
-                    unsigned char r =
-                        (unsigned char)(xr(i) < 0
-                                            ? 0
-                                            : (xr(i) > 255 ? 255 : xr(i)));
-                    unsigned char g =
-                        (unsigned char)(xg(i) < 0
-                                            ? 0
-                                            : (xg(i) > 255 ? 255 : xg(i)));
-                    unsigned char b =
-                        (unsigned char)(xb(i) < 0
-                                            ? 0
-                                            : (xb(i) > 255 ? 255 : xb(i)));
-                    unsigned char a =
-                        (unsigned char)(xa(i) < 0
-                                            ? 0
-                                            : (xa(i) > 255 ? 255 : xa(i)));
-                    data_->set_pixel(tar_x, tar_y, { r, g, b, a });
+                    std::vector<unsigned char> c(4);
+                    for (int l = 0; l < 4; l++)
+                    {
+                        c[l] = (unsigned char)(x[l](i) < 0
+                                                   ? 0
+                                                   : (x[l](i) > 255 ? 255
+                                                                    : x[l](i)));
+                    }
+                    data_->set_pixel(tar_x, tar_y, c);
                 }
             }
             break;
