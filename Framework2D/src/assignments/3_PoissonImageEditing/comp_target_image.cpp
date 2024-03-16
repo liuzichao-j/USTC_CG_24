@@ -123,6 +123,8 @@ void CompTargetImage::clone()
     // of sparse matrix before solve the linear system)
     std::shared_ptr<Image> mask = source_image_->get_region();
 
+    const int channel_num = 3;
+
     switch (clone_type_)
     {
         case USTC_CG::CompTargetImage::kDefault: break;
@@ -152,6 +154,10 @@ void CompTargetImage::clone()
         }
         case USTC_CG::CompTargetImage::kSeamless:
         {
+            // Start the timer
+            clock_t start, end;
+            start = clock();
+
             // You should delete this block and implement your own seamless
             // cloning. For each pixel in the selected region, calculate the
             // final RGB color by solving Poisson Equations.
@@ -167,8 +173,8 @@ void CompTargetImage::clone()
 
             // Calculate br, bg, bb and ba, which are the right sides of the
             // equation.
-            Eigen::VectorXf b[4];
-            for (int i = 0; i < 4; i++)
+            Eigen::VectorXf b[channel_num];
+            for (int i = 0; i < channel_num; i++)
             {
                 b[i] = Eigen::VectorXf::Zero(point_num);
             }
@@ -196,9 +202,7 @@ void CompTargetImage::clone()
                             // Only consider 4 neighbors within the image
                             continue;
                         }
-                        int id =
-                            source_image_->get_id(ImVec2(src_x + j, src_y + k));
-                        if (id == 0)
+                        if (mask->get_pixel(src_x + j, src_y + k)[0] == 0)
                         {
                             // Add f_q to the right side, which is the edge of
                             // the target image
@@ -206,14 +210,14 @@ void CompTargetImage::clone()
                                 std::clamp<int>(tar_x + j, 0, image_width_ - 1);
                             int tarq_y = std::clamp<int>(
                                 tar_y + k, 0, image_height_ - 1);
-                            for (int l = 0; l < 4; l++)
+                            for (int l = 0; l < channel_num; l++)
                             {
                                 b[l](i) += data_->get_pixel(tarq_x, tarq_y)[l];
                             }
                         }
                         // Add g_q to the right side, which represents the
                         // gradient of the source image
-                        for (int l = 0; l < 4; l++)
+                        for (int l = 0; l < channel_num; l++)
                         {
                             b[l](i) +=
                                 (src_data->get_pixel(src_x, src_y)[l] -
@@ -224,8 +228,8 @@ void CompTargetImage::clone()
             }
 
             // Then solve the linear system
-            Eigen::VectorXf x[4];
-            for (int i = 0; i < 4; i++)
+            Eigen::VectorXf x[channel_num];
+            for (int i = 0; i < channel_num; i++)
             {
                 source_image_->solver(b[i], x[i]);
             }
@@ -242,8 +246,8 @@ void CompTargetImage::clone()
                 if (0 <= tar_x && tar_x < image_width_ && 0 <= tar_y &&
                     tar_y < image_height_)
                 {
-                    std::vector<unsigned char> c(4);
-                    for (int l = 0; l < 4; l++)
+                    std::vector<unsigned char> c(channel_num);
+                    for (int l = 0; l < channel_num; l++)
                     {
                         c[l] = (unsigned char)std::clamp<float>(
                             x[l](i), 0.0f, 255.0f);
@@ -251,10 +255,21 @@ void CompTargetImage::clone()
                     data_->set_pixel(tar_x, tar_y, c);
                 }
             }
+
+            // End the timer
+            end = clock();
+            printf(
+                "Seamless Cloning Time: %lfs, FPS: %lf\n",
+                (double)(end - start) / CLOCKS_PER_SEC,
+                1.0 / (((double)(end - start) / CLOCKS_PER_SEC)));
             break;
         }
         case USTC_CG::CompTargetImage::kMixedSeamless:
         {
+            // Start the timer
+            clock_t start, end;
+            start = clock();
+
             restore();
 
             if (!source_image_->is_solver_ready())
@@ -267,8 +282,8 @@ void CompTargetImage::clone()
 
             // Calculate br, bg, bb and ba, which are the right sides of the
             // equation.
-            Eigen::VectorXf b[4];
-            for (int i = 0; i < 4; i++)
+            Eigen::VectorXf b[channel_num];
+            for (int i = 0; i < channel_num; i++)
             {
                 b[i] = Eigen::VectorXf::Zero(point_num);
             }
@@ -296,9 +311,7 @@ void CompTargetImage::clone()
                             // Only consider 4 neighbors within the image
                             continue;
                         }
-                        int id =
-                            source_image_->get_id(ImVec2(src_x + j, src_y + k));
-                        if (id == 0)
+                        if (mask->get_pixel(src_x + j, src_y + k)[0] == 0)
                         {
                             // Add f_q to the right side, which is the edge of
                             // the target image
@@ -306,7 +319,7 @@ void CompTargetImage::clone()
                                 std::clamp<int>(tar_x + j, 0, image_width_ - 1);
                             int tarq_y = std::clamp<int>(
                                 tar_y + k, 0, image_height_ - 1);
-                            for (int l = 0; l < 4; l++)
+                            for (int l = 0; l < channel_num; l++)
                             {
                                 b[l](i) += data_->get_pixel(tarq_x, tarq_y)[l];
                             }
@@ -324,7 +337,7 @@ void CompTargetImage::clone()
                             std::clamp<int>(tar_x, 0, image_width_ - 1);
                         int tarp_y =
                             std::clamp<int>(tar_y, 0, image_height_ - 1);
-                        for (int l = 0; l < 4; l++)
+                        for (int l = 0; l < channel_num; l++)
                         {
                             // For each point pair (p, q), we choose the one
                             // with bigger gradient.
@@ -353,8 +366,8 @@ void CompTargetImage::clone()
             }
 
             // Then solve the linear system
-            Eigen::VectorXf x[4];
-            for (int i = 0; i < 4; i++)
+            Eigen::VectorXf x[channel_num];
+            for (int i = 0; i < channel_num; i++)
             {
                 source_image_->solver(b[i], x[i]);
             }
@@ -371,8 +384,8 @@ void CompTargetImage::clone()
                 if (0 <= tar_x && tar_x < image_width_ && 0 <= tar_y &&
                     tar_y < image_height_)
                 {
-                    std::vector<unsigned char> c(4);
-                    for (int l = 0; l < 4; l++)
+                    std::vector<unsigned char> c(channel_num);
+                    for (int l = 0; l < channel_num; l++)
                     {
                         c[l] = (unsigned char)std::clamp<float>(
                             x[l](i), 0.0f, 255.0f);
@@ -380,6 +393,13 @@ void CompTargetImage::clone()
                     data_->set_pixel(tar_x, tar_y, c);
                 }
             }
+
+            // End the timer
+            end = clock();
+            printf(
+                "Mixed Seamless Cloning Time: %lfs, FPS: %lf\n",
+                (double)(end - start) / CLOCKS_PER_SEC,
+                1.0 / (((double)(end - start) / CLOCKS_PER_SEC)));
             break;
         }
         default: break;

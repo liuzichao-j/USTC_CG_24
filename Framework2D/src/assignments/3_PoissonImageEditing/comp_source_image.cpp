@@ -128,10 +128,21 @@ void CompSourceImage::select_region()
                 now_ = edge_points_.front();
                 edge_points_.push_back(now_);
                 draw_status_ = false;
+
+                // Start the timer
+                clock_t start, end;
+                start = clock();
+
                 // Update the selected region.
                 init_selections();
                 init_id();
                 init_matrix();
+
+                // End the timer
+                end = clock();
+                printf(
+                    "Scanning and Computing A Time: %f\n",
+                    (double)(end - start) / CLOCKS_PER_SEC);
             }
         }
         if (region_type_ == kRect && !ImGui::IsMouseDown(ImGuiMouseButton_Left))
@@ -165,8 +176,19 @@ void CompSourceImage::select_region()
                     // 255.
                 }
             }
+
+            // Start the timer
+            clock_t start, end;
+            start = clock();
+
             init_id();
             init_matrix();
+
+            // End the timer
+            end = clock();
+            printf(
+                "Scanning and Computing A Time: %f\n",
+                (double)(end - start) / CLOCKS_PER_SEC);
         }
         if (region_type_ == kPolygon)
         {
@@ -195,10 +217,21 @@ void CompSourceImage::select_region()
                 now_ = edge_points_.front();
                 edge_points_.push_back(now_);
                 draw_status_ = false;
+
+                // Start the timer
+                clock_t start, end;
+                start = clock();
+
                 // Update the selected region.
                 init_selections();
                 init_id();
                 init_matrix();
+
+                // End the timer
+                end = clock();
+                printf(
+                    "Scanning and Computing A Time: %f\n",
+                    (double)(end - start) / CLOCKS_PER_SEC);
             }
         }
     }
