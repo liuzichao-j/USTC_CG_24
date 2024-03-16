@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <queue>
 
 namespace USTC_CG
 {
@@ -50,6 +51,8 @@ void CompSourceImage::enable_selecting(bool flag)
  */
 void CompSourceImage::set_region_type(RegionType type)
 {
+    start_ = end_ = ImVec2(-1, -1);
+    edge_points_.clear();
     region_type_ = type;
 }
 
@@ -72,24 +75,69 @@ void CompSourceImage::select_region()
     // also consider using the implementation in HW1. (We use rectangle for
     // example)
     ImGuiIO& io = ImGui::GetIO();
-    if (is_hovered_ && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+    if (is_hovered_ && !draw_status_ &&
+        ImGui::IsMouseClicked(ImGuiMouseButton_Left))
     {
         draw_status_ = true;
-        start_ = end_ = ImVec2(
+        ImVec2 start(
             std::clamp<float>(
                 io.MousePos.x - position_.x, 0, (float)image_width_),
             std::clamp<float>(
                 io.MousePos.y - position_.y, 0, (float)image_height_));
+        edge_points_.clear();
+        edge_points_.push_back(start);
+        start_ = start;
+        end_ = start;
     }
-    if (draw_status_)
+    else if (draw_status_)
     {
-        end_ = ImVec2(
+        flag_solver_ready_ = false;
+        now_ = ImVec2(
             std::clamp<float>(
                 io.MousePos.x - position_.x, 0, (float)image_width_),
             std::clamp<float>(
                 io.MousePos.y - position_.y, 0, (float)image_height_));
-        if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
+        if (region_type_ == kFreehand)
         {
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
+            {
+                if (fabs(now_.x - edge_points_.back().x) > 5 ||
+                    fabs(now_.y - edge_points_.back().y) > 5)
+                {
+                    if (now_.x < start_.x)
+                    {
+                        start_.x = now_.x;
+                    }
+                    if (now_.y < start_.y)
+                    {
+                        start_.y = now_.y;
+                    }
+                    if (now_.x > end_.x)
+                    {
+                        end_.x = now_.x;
+                    }
+                    if (now_.y > end_.y)
+                    {
+                        end_.y = now_.y;
+                    }
+                    edge_points_.push_back(now_);
+                }
+            }
+            else
+            {
+                now_ = edge_points_.front();
+                edge_points_.push_back(now_);
+                draw_status_ = false;
+                // Update the selected region.
+                init_selections();
+                init_id();
+                init_matrix();
+            }
+        }
+        if (region_type_ == kRect && !ImGui::IsMouseDown(ImGuiMouseButton_Left))
+        {
+            end_ = now_;
+            edge_points_.push_back(end_);
             draw_status_ = false;
             // Update the selected region.
 
@@ -108,46 +156,130 @@ void CompSourceImage::select_region()
                     selected_region_->set_pixel(i, j, { 0 });
                 }
             }
-            switch (region_type_)
+            for (int i = (int)(start_.x); i < (int)(end_.x); ++i)
             {
-                case USTC_CG::CompSourceImage::kDefault: break;
-                case USTC_CG::CompSourceImage::kRect:
+                for (int j = (int)(start_.y); j < (int)(end_.y); ++j)
                 {
-                    for (int i = static_cast<int>(start_.x);
-                         i < static_cast<int>(end_.x);
-                         ++i)
-                    {
-                        for (int j = static_cast<int>(start_.y);
-                             j < static_cast<int>(end_.y);
-                             ++j)
-                        {
-                            selected_region_->set_pixel(i, j, { 255 });
-                            // Select the region by setting the pixel value to
-                            // 255.
-                        }
-                    }
-                    break;
+                    selected_region_->set_pixel(i, j, { 255 });
+                    // Select the region by setting the pixel value to
+                    // 255.
                 }
-                default: break;
             }
-            init_id(region_type_);
+            init_id();
             init_matrix();
+        }
+        if (region_type_ == kPolygon)
+        {
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            {
+                if (now_.x < start_.x)
+                {
+                    start_.x = now_.x;
+                }
+                if (now_.y < start_.y)
+                {
+                    start_.y = now_.y;
+                }
+                if (now_.x > end_.x)
+                {
+                    end_.x = now_.x;
+                }
+                if (now_.y > end_.y)
+                {
+                    end_.y = now_.y;
+                }
+                edge_points_.push_back(now_);
+            }
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+            {
+                now_ = edge_points_.front();
+                edge_points_.push_back(now_);
+                draw_status_ = false;
+                // Update the selected region.
+                init_selections();
+                init_id();
+                init_matrix();
+            }
         }
     }
 
     // Visualization
     auto draw_list = ImGui::GetWindowDrawList();
-    ImVec2 s(start_.x + position_.x, start_.y + position_.y);
-    ImVec2 e(end_.x + position_.x, end_.y + position_.y);
+    float thickness = 2.0f;
 
     switch (region_type_)
     {
         case USTC_CG::CompSourceImage::kDefault: break;
         case USTC_CG::CompSourceImage::kRect:
         {
-            if (e.x > s.x && e.y > s.y)
+            if (start_.x != -1 && start_.x < now_.x && start_.y < now_.y)
             {
-                draw_list->AddRect(s, e, IM_COL32(255, 0, 0, 255), 2.0f);
+                draw_list->AddRect(
+                    ImVec2(start_.x + position_.x, start_.y + position_.y),
+                    ImVec2(now_.x + position_.x, now_.y + position_.y),
+                    IM_COL32(255, 0, 0, 255),
+                    thickness);
+            }
+            break;
+        }
+        case USTC_CG::CompSourceImage::kPolygon:
+        {
+            if (!edge_points_.empty())
+            {
+                for (int i = 0; i < edge_points_.size() - 1; i++)
+                {
+                    draw_list->AddLine(
+                        ImVec2(
+                            edge_points_[i].x + position_.x,
+                            edge_points_[i].y + position_.y),
+                        ImVec2(
+                            edge_points_[i + 1].x + position_.x,
+                            edge_points_[i + 1].y + position_.y),
+                        IM_COL32(255, 0, 0, 255),
+                        thickness);
+                }
+                draw_list->AddLine(
+                    ImVec2(
+                        edge_points_.back().x + position_.x,
+                        edge_points_.back().y + position_.y),
+                    ImVec2(now_.x + position_.x, now_.y + position_.y),
+                    IM_COL32(255, 0, 0, 255),
+                    thickness);
+                draw_list->AddLine(
+                    ImVec2(now_.x + position_.x, now_.y + position_.y),
+                    ImVec2(
+                        edge_points_.front().x + position_.x,
+                        edge_points_.front().y + position_.y),
+                    IM_COL32(255, 0, 0, 255),
+                    thickness / 2);
+            }
+            break;
+        }
+        case USTC_CG::CompSourceImage::kFreehand:
+        {
+            if (!edge_points_.empty())
+            {
+                for (int i = 0; i < edge_points_.size() - 1; i++)
+                {
+                    draw_list->AddLine(
+                        ImVec2(
+                            edge_points_[i].x + position_.x,
+                            edge_points_[i].y + position_.y),
+                        ImVec2(
+                            edge_points_[i + 1].x + position_.x,
+                            edge_points_[i + 1].y + position_.y),
+                        IM_COL32(255, 0, 0, 255),
+                        thickness);
+                }
+                draw_list->AddLine(
+                    ImVec2(
+                        edge_points_.back().x + position_.x,
+                        edge_points_.back().y + position_.y),
+                    ImVec2(
+                        edge_points_.front().x + position_.x,
+                        edge_points_.front().y + position_.y),
+                    IM_COL32(255, 0, 0, 255),
+                    thickness / 2);
             }
             break;
         }
@@ -183,10 +315,138 @@ ImVec2 CompSourceImage::get_position() const
 }
 
 /**
- * @brief Initialize the selected region by giving every point an id.
- * @param type The type of region to be selected.
+ * @brief Scanning line algorithm to fill the selected region.
  */
-void CompSourceImage::init_id(RegionType type)
+void CompSourceImage::init_selections()
+{
+    for (int i = 0; i < selected_region_->width(); ++i)
+    {
+        for (int j = 0; j < selected_region_->height(); ++j)
+        {
+            selected_region_->set_pixel(i, j, { 0 });
+        }
+    }
+    // edge_points_.push_back(edge_points_[1]);  // For easy iteration
+    std::vector<
+        std::priority_queue<float, std::vector<float>, std::greater<float>>>
+        point_table(selected_region_->height());
+    /*
+    for (int i = 1; i < edge_points_.size() - 1; i++)
+    {
+        // Tackle with each point.
+        if ((edge_points_[i - 1].y - edge_points_[i].y) *
+                (edge_points_[i + 1].y - edge_points_[i].y) <
+            0)
+        {
+            // In different sides of the horizontal line.
+            point_table[(int)edge_points_[i].y].push(edge_points_[i].x);
+        }
+        // Tackle with horizontal line. There are four cases.
+        else if (
+            (edge_points_[i - 1].y == edge_points_[i].y &&
+             edge_points_[i + 1].y < edge_points_[i].y) ||
+            (edge_points_[i - 1].y < edge_points_[i].y &&
+             edge_points_[i + 1].y == edge_points_[i].y))
+        {
+            point_table[(int)edge_points_[i].y].push(edge_points_[i].x);
+        }
+        // If edge_points_[i - 1].y == edge_points_[i].y and edge_points_[i +
+        // 1].y == edge_points_[i].y, do nothing.
+    }
+    edge_points_.pop_back();
+    for (int i = 0; i < edge_points_.size() - 1; i++)
+    {
+        // Tackle with each line.
+        float k = (edge_points_[i + 1].y - edge_points_[i].y) /
+                  (edge_points_[i + 1].x - edge_points_[i].x);
+        float b = edge_points_[i].y - k * edge_points_[i].x;
+        float y1 = edge_points_[i].y, y2 = edge_points_[i + 1].y;
+        if (y1 > y2)
+        {
+            std::swap(y1, y2);
+        }
+        for (int y = (int)y1 + 1; y < (int)y2; y++)
+        {
+            float x = (y - b) / k;
+            x = std::clamp(x, 0.0f, (float)selected_region_->width());
+            point_table[y].push(x);
+        }
+    }
+    */
+
+    // Consider that y may not be integer, the method above considering
+    // intersection at point may not work. Add 0.1 to each y to make sure that
+    // every y is float.
+    float d = 0.1f;
+    for (int i = 0; i < edge_points_.size(); i++)
+    {
+        edge_points_[i].y += d;
+    }
+    // For each edge, we add intersections with horizontal lines.
+    for (int i = 0; i < edge_points_.size() - 1; i++)
+    {
+        float y1 = edge_points_[i].y, y2 = edge_points_[i + 1].y;
+        if (y1 > y2)
+        {
+            std::swap(y1, y2);
+        }
+        if (edge_points_[i + 1].x == edge_points_[i].x)
+        {
+            for (int y = (int)y1 + 1; y <= (int)y2; y++)
+            {
+                point_table[y].push(edge_points_[i].x);
+            }
+        }
+        else
+        {
+            float k = (edge_points_[i + 1].y - edge_points_[i].y) /
+                      (edge_points_[i + 1].x - edge_points_[i].x);
+            float b = edge_points_[i].y - k * edge_points_[i].x;
+            for (int y = (int)y1 + 1; y <= (int)y2; y++)
+            {
+                float x = (y - b) / k;
+                point_table[y].push(x);
+            }
+        }
+    }
+    for (int i = 0; i < edge_points_.size(); i++)
+    {
+        edge_points_[i].y -= d;
+    }
+
+    // Point table is ready. Now fill the region.
+    for (int i = (int)start_.y; i <= end_.y; i++)
+    {
+        while (!point_table[i].empty())
+        {
+            int x_1 = (int)point_table[i].top();
+            point_table[i].pop();
+            if (point_table[i].empty())
+            {
+                throw std::exception(
+                    "Bug: point_table[%d] only have odd number of elements", i);
+            }
+            int x_2 = (int)point_table[i].top();
+            point_table[i].pop();
+            if (x_1 < 0 || x_2 < 0 || x_1 >= selected_region_->width() ||
+                x_2 >= selected_region_->width())
+            {
+                printf("Bug: x_1 = %d, x_2 = %d, y = %d\n", x_1, x_2, i);
+                continue;
+            }
+            for (int j = x_1; j <= x_2; j++)
+            {
+                selected_region_->set_pixel(j, i, { 255 });
+            }
+        }
+    }
+    return;
+}
+
+/**
+ * @brief Initialize the selected region by giving every point an id.
+ */
+void CompSourceImage::init_id()
 {
     point_to_id_.clear();
     id_to_point_.clear();
@@ -196,25 +456,17 @@ void CompSourceImage::init_id(RegionType type)
         point_to_id_[i].resize(selected_region_->height());
     }
     int id = 1;
-
-    switch (type)
+    for (int i = 0; i < selected_region_->width(); i++)
     {
-        case kRect:
-            for (int i = 0; i < selected_region_->width(); i++)
+        for (int j = 0; j < selected_region_->height(); j++)
+        {
+            if (selected_region_->get_pixel(i, j)[0] > 0)
             {
-                for (int j = 0; j < selected_region_->height(); j++)
-                {
-                    if (selected_region_->get_pixel(i, j)[0] > 0)
-                    {
-                        point_to_id_[i][j] = id;
-                        id_to_point_.push_back(ImVec2((float)i, (float)j));
-                        id++;
-                    }
-                }
+                point_to_id_[i][j] = id;
+                id_to_point_.push_back(ImVec2((float)i, (float)j));
+                id++;
             }
-            break;
-
-        default: break;
+        }
     }
 }
 
@@ -268,7 +520,7 @@ void CompSourceImage::init_matrix()
 
     // Things in the left side of the equation are variables.
 
-    int point_num = id_to_point_.size();
+    int point_num = (int)id_to_point_.size();
 
     // Sparse matrix A and Triplet to build A.
     A_.resize(point_num, point_num);
@@ -282,9 +534,6 @@ void CompSourceImage::init_matrix()
         int src_x = (int)id_to_point_[i].x;
         int src_y = (int)id_to_point_[i].y;
 
-        // Count the number of neighbors
-        int np = 0;
-
         // For each neighbor of the point
         for (int j = -1; j <= 1; j++)
         {
@@ -297,17 +546,16 @@ void CompSourceImage::init_matrix()
                     // Only consider 4 neighbors within the image
                     continue;
                 }
-                int id = get_id(ImVec2(src_x + j, src_y + k));
+                int id = get_id(ImVec2((float)(src_x + j), (float)(src_y + k)));
                 if (id != 0)
                 {
                     // Coefficient of f_q is -1
                     triplet.push_back(Eigen::Triplet<float>(i, id - 1, -1));
                 }
-                np++;
+                // Add coefficient of f_i
+                triplet.push_back(Eigen::Triplet<float>(i, i, 1));
             }
         }
-        // Coefficient of f_i is np
-        triplet.push_back(Eigen::Triplet<float>(i, i, np));
     }
     A_.setFromTriplets(triplet.begin(), triplet.end());
 
@@ -317,6 +565,7 @@ void CompSourceImage::init_matrix()
         // Decomposition failed
         throw std::exception("Decomposition failed");
     }
+    flag_solver_ready_ = true;
     return;
 }
 
@@ -342,10 +591,6 @@ void CompSourceImage::solver(Eigen::VectorXf& b, Eigen::VectorXf& x)
  */
 bool CompSourceImage::is_solver_ready()
 {
-    if (solver_.info() != Eigen::Success)
-    {
-        return false;
-    }
-    return true;
+    return flag_solver_ready_;
 };
 }  // namespace USTC_CG

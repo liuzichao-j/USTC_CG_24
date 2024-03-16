@@ -1,8 +1,8 @@
 #pragma once
 
-#include "view/comp_image.h"
-
 #include <Eigen/Sparse>
+
+#include "view/comp_image.h"
 
 namespace USTC_CG
 {
@@ -36,8 +36,11 @@ class CompSourceImage : public ImageEditor
     // Get the position to locate the region in the target image
     ImVec2 get_position() const;
 
+    // Scanning line algorithm to fill the selected region
+    void init_selections();
+
     // Initialize the selected region by giving every point an id
-    void init_id(RegionType type);
+    void init_id();
     // Get the id of a point in the selected region
     int get_id(ImVec2 point);
     // Get the point of an id in the selected region
@@ -54,10 +57,15 @@ class CompSourceImage : public ImageEditor
    private:
     RegionType region_type_ = kDefault;
     std::shared_ptr<Image> selected_region_;
+    // Now position when drawing the selected region
+    ImVec2 now_;
+    // The left-top position of the selected region
     ImVec2 start_, end_;
+    // Store points on the edge
+    std::vector<ImVec2> edge_points_;
     bool flag_enable_selecting_region_ = false;
     bool draw_status_ = false;
-    
+
     // Calculate the id of a point in the selected region
     std::vector<std::vector<int>> point_to_id_;
     std::vector<ImVec2> id_to_point_;
@@ -65,5 +73,7 @@ class CompSourceImage : public ImageEditor
     // Store matrix A and solver
     Eigen::SparseMatrix<float> A_;
     Eigen::SimplicialLLT<Eigen::SparseMatrix<float>> solver_;
+
+    bool flag_solver_ready_ = false;
 };
 }  // namespace USTC_CG

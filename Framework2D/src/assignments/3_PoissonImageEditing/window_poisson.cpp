@@ -33,7 +33,6 @@ void WindowPoisson::draw()
     {
         draw_save_image_file_dialog();
     }
-
     if (p_target_)
     {
         draw_target();
@@ -58,31 +57,33 @@ void WindowPoisson::draw_toolbar()
                 flag_open_target_file_dialog_ = true;
             }
             add_tooltips("Open the target image file.");
-            if (p_target_ && ImGui::MenuItem("Open Source.."))
+            if (p_target_)
             {
-                flag_open_source_file_dialog_ = true;
+                if (ImGui::MenuItem("Open Source.."))
+                {
+                    flag_open_source_file_dialog_ = true;
+                }
                 add_tooltips(
                     "Open the source image file. This is available only when "
                     "the target image is loaded.");
-            }
-            if (p_target_ && ImGui::MenuItem("Save As.."))
-            {
-                flag_save_file_dialog_ = true;
+                if (ImGui::MenuItem("Save As.."))
+                {
+                    flag_save_file_dialog_ = true;
+                }
+                add_tooltips("Save the edited target image.");
             }
             ImGui::EndMenu();
         }
-
         ImGui::Separator();
-
-        if (p_target_ && ImGui::MenuItem("Restore"))
-        {
-            p_target_->restore();
-            add_tooltips("Replace the target image with back up data.");
-            ImGui::Separator();
-        }
-
         if (p_target_)
         {
+            if (ImGui::MenuItem("Restore"))
+            {
+                p_target_->restore();
+            }
+            add_tooltips("Replace the target image with back up data.");
+            ImGui::Separator();
+
             static bool realtime = false;
             ImGui::Checkbox("Realtime", &realtime);
             add_tooltips(
@@ -109,44 +110,57 @@ void WindowPoisson::draw_toolbar()
                     {
                         p_source_->set_region_type(CompSourceImage::kRect);
                     }
+                    add_tooltips(
+                        "Select a rectangle region in the source image.");
                     if (ImGui::MenuItem("Polygon"))
                     {
                         p_source_->set_region_type(CompSourceImage::kPolygon);
                     }
+                    add_tooltips(
+                        "Select a polygon region in the source image. Press "
+                        "left mouse to add a point, and right mouse to "
+                        "finish.");
                     if (ImGui::MenuItem("Freehand"))
                     {
                         p_source_->set_region_type(CompSourceImage::kFreehand);
                     }
+                    add_tooltips(
+                        "Select a freehand region in the source image. Drag "
+                        "left mouse to draw a freehand region.");
                     ImGui::EndMenu();
                 }
+                add_tooltips(
+                    "Choose the region type to select in the source image.");
             }
             ImGui::Separator();
         }
-
-        if (p_target_ && p_source_ && ImGui::MenuItem("Paste"))
+        if (p_target_ && p_source_ && p_source_->is_solver_ready())
         {
-            p_target_->set_paste();
+            if (ImGui::MenuItem("Paste"))
+            {
+                p_target_->set_paste();
+            }
             add_tooltips(
                 "Press this button and then click in the target image, to "
                 "clone the selected region to the target image.");
-        }
-        // HW3_TODO: You may add more items in the menu for the different types
-        // of Poisson editing.
-        if (p_target_ && p_source_ && ImGui::MenuItem("Seamless cloning"))
-        {
-            p_target_->set_seamless();
+            // HW3_TODO: You may add more items in the menu for the different
+            // types of Poisson editing.
+            if (ImGui::MenuItem("Seamless cloning"))
+            {
+                p_target_->set_seamless();
+            }
             add_tooltips(
                 "Press this button and then click in the target image, to "
                 "use seamless method to clone the selected region to the "
                 "target image.");
-        }
-        if (p_target_ && p_source_ && ImGui::MenuItem("Mixed Seamless cloning"))
-        {
-            p_target_->set_mixed_seamless();
+            if (ImGui::MenuItem("Mixed Seamless cloning"))
+            {
+                p_target_->set_mixed_seamless();
+            }
             add_tooltips(
                 "Press this button and then click in the target image, to "
-                "use mixed seamless method to clone the selected region to the "
-                "target image.");
+                "use mixed seamless method to clone the selected region to "
+                "the target image.");
         }
         ImGui::EndMainMenuBar();
     }

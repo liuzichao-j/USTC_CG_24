@@ -134,12 +134,10 @@ void CompTargetImage::clone()
             {
                 for (int j = 0; j < mask->height(); ++j)
                 {
-                    int tar_x =
-                        static_cast<int>(mouse_position_.x) + i -
-                        static_cast<int>(source_image_->get_position().x);
-                    int tar_y =
-                        static_cast<int>(mouse_position_.y) + j -
-                        static_cast<int>(source_image_->get_position().y);
+                    int tar_x = i + (int)(mouse_position_.x -
+                                          source_image_->get_position().x);
+                    int tar_y = j + (int)(mouse_position_.y -
+                                          source_image_->get_position().y);
                     if (0 <= tar_x && tar_x < image_width_ && 0 <= tar_y &&
                         tar_y < image_height_ && mask->get_pixel(i, j)[0] > 0)
                     {
@@ -204,24 +202,13 @@ void CompTargetImage::clone()
                         {
                             // Add f_q to the right side, which is the edge of
                             // the target image
-                            if (tar_x + j < 0 || tar_x + j >= image_width_ ||
-                                tar_y + k < 0 || tar_y + k >= image_height_)
+                            int tarq_x =
+                                std::clamp<int>(tar_x + j, 0, image_width_ - 1);
+                            int tarq_y = std::clamp<int>(
+                                tar_y + k, 0, image_height_ - 1);
+                            for (int l = 0; l < 4; l++)
                             {
-                                // If it is out of the target image, use the
-                                // source image instead
-                                for (int l = 0; l < 4; l++)
-                                {
-                                    b[l](i) += src_data->get_pixel(
-                                        src_x + j, src_y + k)[l];
-                                }
-                            }
-                            else
-                            {
-                                for (int l = 0; l < 4; l++)
-                                {
-                                    b[l](i) += data_->get_pixel(
-                                        tar_x + j, tar_y + k)[l];
-                                }
+                                b[l](i) += data_->get_pixel(tarq_x, tarq_y)[l];
                             }
                         }
                         // Add g_q to the right side, which represents the
@@ -248,22 +235,18 @@ void CompTargetImage::clone()
             {
                 int src_x = (int)source_image_->get_point(i).x;
                 int src_y = (int)source_image_->get_point(i).y;
-                int tar_x =
-                    (int)(mouse_position_.x - source_image_->get_position().x) +
-                    src_x;
-                int tar_y =
-                    (int)(mouse_position_.y - source_image_->get_position().y) +
-                    src_y;
+                int tar_x = src_x + (int)(mouse_position_.x -
+                                          source_image_->get_position().x);
+                int tar_y = src_y + (int)(mouse_position_.y -
+                                          source_image_->get_position().y);
                 if (0 <= tar_x && tar_x < image_width_ && 0 <= tar_y &&
                     tar_y < image_height_)
                 {
                     std::vector<unsigned char> c(4);
                     for (int l = 0; l < 4; l++)
                     {
-                        c[l] = (unsigned char)(x[l](i) < 0
-                                                   ? 0
-                                                   : (x[l](i) > 255 ? 255
-                                                                    : x[l](i)));
+                        c[l] = (unsigned char)std::clamp<float>(
+                            x[l](i), 0.0f, 255.0f);
                     }
                     data_->set_pixel(tar_x, tar_y, c);
                 }
@@ -296,12 +279,10 @@ void CompTargetImage::clone()
                 // source image.
                 int src_x = (int)source_image_->get_point(i).x;
                 int src_y = (int)source_image_->get_point(i).y;
-                int tar_x =
-                    (int)(mouse_position_.x - source_image_->get_position().x) +
-                    src_x;
-                int tar_y =
-                    (int)(mouse_position_.y - source_image_->get_position().y) +
-                    src_y;
+                int tar_x = src_x + (int)(mouse_position_.x -
+                                          source_image_->get_position().x);
+                int tar_y = src_y + (int)(mouse_position_.y -
+                                          source_image_->get_position().y);
 
                 // For each neighbor of the point
                 for (int j = -1; j <= 1; j++)
@@ -321,24 +302,13 @@ void CompTargetImage::clone()
                         {
                             // Add f_q to the right side, which is the edge of
                             // the target image
-                            if (tar_x + j < 0 || tar_x + j >= image_width_ ||
-                                tar_y + k < 0 || tar_y + k >= image_height_)
+                            int tarq_x =
+                                std::clamp<int>(tar_x + j, 0, image_width_ - 1);
+                            int tarq_y = std::clamp<int>(
+                                tar_y + k, 0, image_height_ - 1);
+                            for (int l = 0; l < 4; l++)
                             {
-                                // If it is out of the target image, use the
-                                // source image instead
-                                for (int l = 0; l < 4; l++)
-                                {
-                                    b[l](i) += src_data->get_pixel(
-                                        src_x + j, src_y + k)[l];
-                                }
-                            }
-                            else
-                            {
-                                for (int l = 0; l < 4; l++)
-                                {
-                                    b[l](i) += data_->get_pixel(
-                                        tar_x + j, tar_y + k)[l];
-                                }
+                                b[l](i) += data_->get_pixel(tarq_x, tarq_y)[l];
                             }
                         }
                         // Add g_q to the right side, which represents the
@@ -346,48 +316,36 @@ void CompTargetImage::clone()
 
                         // For mixed situation, we choose the bigger one of the
                         // two gradients, as described in the paper.
-                        if (tar_x + j < 0 || tar_x + j >= image_width_ ||
-                            tar_y + k < 0 || tar_y + k >= image_height_ ||
-                            tar_x < 0 || tar_x >= image_width_ || tar_y < 0 ||
-                            tar_y >= image_height_)
+                        int tarq_x =
+                            std::clamp<int>(tar_x + j, 0, image_width_ - 1);
+                        int tarq_y =
+                            std::clamp<int>(tar_y + k, 0, image_height_ - 1);
+                        int tarp_x =
+                            std::clamp<int>(tar_x, 0, image_width_ - 1);
+                        int tarp_y =
+                            std::clamp<int>(tar_y, 0, image_height_ - 1);
+                        for (int l = 0; l < 4; l++)
                         {
-                            // If not in the image, use source gradient
-                            // instead
-                            for (int l = 0; l < 4; l++)
+                            // For each point pair (p, q), we choose the one
+                            // with bigger gradient.
+                            if (fabs(
+                                    data_->get_pixel(tarp_x, tarp_y)[l] -
+                                    data_->get_pixel(tarq_x, tarq_y)[l]) >
+                                fabs(
+                                    src_data->get_pixel(src_x, src_y)[l] -
+                                    src_data->get_pixel(
+                                        src_x + j, src_y + k)[l]))
+                            {
+                                b[l](i) +=
+                                    (data_->get_pixel(tarp_x, tarp_y)[l] -
+                                     data_->get_pixel(tarq_x, tarq_y)[l]);
+                            }
+                            else
                             {
                                 b[l](i) +=
                                     (src_data->get_pixel(src_x, src_y)[l] -
                                      src_data->get_pixel(
                                          src_x + j, src_y + k)[l]);
-                            }
-                        }
-                        else
-                        {
-                            for (int l = 0; l < 4; l++)
-                            {
-                                // For each point pair (p, q), we choose the one
-                                // with bigger gradient.
-                                if (fabs(
-                                        data_->get_pixel(tar_x, tar_y)[l] -
-                                        data_->get_pixel(
-                                            tar_x + j, tar_y + k)[l]) >
-                                    fabs(
-                                        src_data->get_pixel(src_x, src_y)[l] -
-                                        src_data->get_pixel(
-                                            src_x + j, src_y + k)[l]))
-                                {
-                                    b[l](i) +=
-                                        (data_->get_pixel(tar_x, tar_y)[l] -
-                                         data_->get_pixel(
-                                             tar_x + j, tar_y + k)[l]);
-                                }
-                                else
-                                {
-                                    b[l](i) +=
-                                        (src_data->get_pixel(src_x, src_y)[l] -
-                                         src_data->get_pixel(
-                                             src_x + j, src_y + k)[l]);
-                                }
                             }
                         }
                     }
@@ -406,22 +364,18 @@ void CompTargetImage::clone()
             {
                 int src_x = (int)source_image_->get_point(i).x;
                 int src_y = (int)source_image_->get_point(i).y;
-                int tar_x =
-                    (int)(mouse_position_.x - source_image_->get_position().x) +
-                    src_x;
-                int tar_y =
-                    (int)(mouse_position_.y - source_image_->get_position().y) +
-                    src_y;
+                int tar_x = src_x + (int)(mouse_position_.x -
+                                          source_image_->get_position().x);
+                int tar_y = src_y + (int)(mouse_position_.y -
+                                          source_image_->get_position().y);
                 if (0 <= tar_x && tar_x < image_width_ && 0 <= tar_y &&
                     tar_y < image_height_)
                 {
                     std::vector<unsigned char> c(4);
                     for (int l = 0; l < 4; l++)
                     {
-                        c[l] = (unsigned char)(x[l](i) < 0
-                                                   ? 0
-                                                   : (x[l](i) > 255 ? 255
-                                                                    : x[l](i)));
+                        c[l] = (unsigned char)std::clamp<float>(
+                            x[l](i), 0.0f, 255.0f);
                     }
                     data_->set_pixel(tar_x, tar_y, c);
                 }
@@ -432,6 +386,5 @@ void CompTargetImage::clone()
     }
 
     update();
-}
-
+};
 }  // namespace USTC_CG
