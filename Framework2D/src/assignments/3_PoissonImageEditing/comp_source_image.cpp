@@ -103,9 +103,10 @@ void CompSourceImage::select_region()
         {
             if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
             {
-                if (fabs(now_.x - edge_points_.back().x) > 5 ||
-                    fabs(now_.y - edge_points_.back().y) > 5)
+                if (fabs(now_.x - edge_points_.back().x) > 0.5 ||
+                    fabs(now_.y - edge_points_.back().y) > 0.5)
                 {
+                    // If there are any differences, add the point to the edge.
                     if (now_.x < start_.x)
                     {
                         start_.x = now_.x;
@@ -483,12 +484,8 @@ void CompSourceImage::init_selections()
             }
             int x_2 = (int)point_table[i].top();
             point_table[i].pop();
-            if (x_1 < 0 || x_2 < 0 || x_1 >= selected_region_->width() ||
-                x_2 >= selected_region_->width())
-            {
-                printf("Bug: x_1 = %d, x_2 = %d, y = %d\n", x_1, x_2, i);
-                continue;
-            }
+            x_1 = std::clamp(x_1, 0, selected_region_->width() - 1);
+            x_2 = std::clamp(x_2, 0, selected_region_->width() - 1);
             for (int j = x_1; j <= x_2; j++)
             {
                 selected_region_->set_pixel(j, i, { 255 });
