@@ -121,6 +121,11 @@ class Image
         return pixelValues;
     }
 
+    inline unsigned char get_pixel_unsafe(int x, int y, int channel) const
+    {
+        return image_data_[(y * width_ + x) * channels_ + channel];
+    }
+
     void set_pixel(int x, int y, const std::vector<unsigned char>& values)
     {
         if (x < 0 || x >= width_ || y < 0 || y >= height_)

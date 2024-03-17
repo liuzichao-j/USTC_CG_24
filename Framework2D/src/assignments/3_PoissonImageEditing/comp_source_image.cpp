@@ -53,6 +53,8 @@ void CompSourceImage::set_region_type(RegionType type)
 {
     start_ = end_ = ImVec2(-1, -1);
     edge_points_.clear();
+    draw_status_ = false;
+    flag_solver_ready_ = false;
     region_type_ = type;
 }
 
@@ -128,6 +130,7 @@ void CompSourceImage::select_region()
                 now_ = edge_points_.front();
                 edge_points_.push_back(now_);
                 draw_status_ = false;
+                now_ = ImVec2(-1, -1);
 
                 // Start the timer
                 clock_t start, end;
@@ -150,6 +153,7 @@ void CompSourceImage::select_region()
             end_ = now_;
             edge_points_.push_back(end_);
             draw_status_ = false;
+            now_ = ImVec2(-1, -1);
             // Update the selected region.
 
             // HW3_TODO(optional): For other types of closed shapes, the most
@@ -217,6 +221,7 @@ void CompSourceImage::select_region()
                 now_ = edge_points_.front();
                 edge_points_.push_back(now_);
                 draw_status_ = false;
+                now_ = ImVec2(-1, -1);
 
                 // Start the timer
                 clock_t start, end;
@@ -245,13 +250,24 @@ void CompSourceImage::select_region()
         case USTC_CG::CompSourceImage::kDefault: break;
         case USTC_CG::CompSourceImage::kRect:
         {
-            if (start_.x != -1 && start_.x < now_.x && start_.y < now_.y)
+            if (start_.x != -1)
             {
-                draw_list->AddRect(
-                    ImVec2(start_.x + position_.x, start_.y + position_.y),
-                    ImVec2(now_.x + position_.x, now_.y + position_.y),
-                    IM_COL32(255, 0, 0, 255),
-                    thickness);
+                if (now_.x != -1 && start_.x < now_.x && start_.y < now_.y)
+                {
+                    draw_list->AddRect(
+                        ImVec2(start_.x + position_.x, start_.y + position_.y),
+                        ImVec2(now_.x + position_.x, now_.y + position_.y),
+                        IM_COL32(255, 0, 0, 255),
+                        thickness);
+                }
+                else if (end_.x != -1 && start_.x < end_.x && start_.y < end_.y)
+                {
+                    draw_list->AddRect(
+                        ImVec2(start_.x + position_.x, start_.y + position_.y),
+                        ImVec2(end_.x + position_.x, end_.y + position_.y),
+                        IM_COL32(255, 0, 0, 255),
+                        thickness);
+                }
             }
             break;
         }
@@ -271,20 +287,23 @@ void CompSourceImage::select_region()
                         IM_COL32(255, 0, 0, 255),
                         thickness);
                 }
-                draw_list->AddLine(
-                    ImVec2(
-                        edge_points_.back().x + position_.x,
-                        edge_points_.back().y + position_.y),
-                    ImVec2(now_.x + position_.x, now_.y + position_.y),
-                    IM_COL32(255, 0, 0, 255),
-                    thickness);
-                draw_list->AddLine(
-                    ImVec2(now_.x + position_.x, now_.y + position_.y),
-                    ImVec2(
-                        edge_points_.front().x + position_.x,
-                        edge_points_.front().y + position_.y),
-                    IM_COL32(255, 0, 0, 255),
-                    thickness / 2);
+                if (now_.x != -1)
+                {
+                    draw_list->AddLine(
+                        ImVec2(
+                            edge_points_.back().x + position_.x,
+                            edge_points_.back().y + position_.y),
+                        ImVec2(now_.x + position_.x, now_.y + position_.y),
+                        IM_COL32(255, 0, 0, 255),
+                        thickness);
+                    draw_list->AddLine(
+                        ImVec2(now_.x + position_.x, now_.y + position_.y),
+                        ImVec2(
+                            edge_points_.front().x + position_.x,
+                            edge_points_.front().y + position_.y),
+                        IM_COL32(255, 0, 0, 255),
+                        thickness / 2);
+                }
             }
             break;
         }
@@ -304,15 +323,18 @@ void CompSourceImage::select_region()
                         IM_COL32(255, 0, 0, 255),
                         thickness);
                 }
-                draw_list->AddLine(
-                    ImVec2(
-                        edge_points_.back().x + position_.x,
-                        edge_points_.back().y + position_.y),
-                    ImVec2(
-                        edge_points_.front().x + position_.x,
-                        edge_points_.front().y + position_.y),
-                    IM_COL32(255, 0, 0, 255),
-                    thickness / 2);
+                if (now_.x != -1)
+                {
+                    draw_list->AddLine(
+                        ImVec2(
+                            edge_points_.back().x + position_.x,
+                            edge_points_.back().y + position_.y),
+                        ImVec2(
+                            edge_points_.front().x + position_.x,
+                            edge_points_.front().y + position_.y),
+                        IM_COL32(255, 0, 0, 255),
+                        thickness / 2);
+                }
             }
             break;
         }

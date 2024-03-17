@@ -123,7 +123,9 @@ void CompTargetImage::clone()
     // of sparse matrix before solve the linear system)
     if (data_ == nullptr || source_image_ == nullptr ||
         source_image_->get_region() == nullptr)
+    {
         return;
+    }
     std::shared_ptr<Image> mask = source_image_->get_region();
 
     const int channel_num = 3;
@@ -182,16 +184,19 @@ void CompTargetImage::clone()
                 b[i] = Eigen::VectorXf::Zero(point_num);
             }
 
+            int bias_x =
+                (int)(mouse_position_.x - source_image_->get_position().x);
+            int bias_y =
+                (int)(mouse_position_.y - source_image_->get_position().y);
+
             for (int i = 0; i < point_num; i++)
             {
                 // Make the formula No. i. Point is in the coordinate of the
                 // source image.
                 int src_x = (int)source_image_->get_point(i).x;
                 int src_y = (int)source_image_->get_point(i).y;
-                int tar_x = src_x + (int)(mouse_position_.x -
-                                          source_image_->get_position().x);
-                int tar_y = src_y + (int)(mouse_position_.y -
-                                          source_image_->get_position().y);
+                int tar_x = src_x + bias_x;
+                int tar_y = src_y + bias_y;
 
                 // For each neighbor of the point
                 for (int j = -1; j <= 1; j++)
@@ -205,7 +210,8 @@ void CompTargetImage::clone()
                             // Only consider 4 neighbors within the image
                             continue;
                         }
-                        if (mask->get_pixel(src_x + j, src_y + k)[0] == 0)
+                        if (mask->get_pixel_unsafe(src_x + j, src_y + k, 0) ==
+                            0)
                         {
                             // Add f_q to the right side, which is the edge of
                             // the target image
@@ -215,7 +221,8 @@ void CompTargetImage::clone()
                                 tar_y + k, 0, image_height_ - 1);
                             for (int l = 0; l < channel_num; l++)
                             {
-                                b[l](i) += data_->get_pixel(tarq_x, tarq_y)[l];
+                                b[l](i) +=
+                                    data_->get_pixel_unsafe(tarq_x, tarq_y, l);
                             }
                         }
                         // Add g_q to the right side, which represents the
@@ -223,8 +230,9 @@ void CompTargetImage::clone()
                         for (int l = 0; l < channel_num; l++)
                         {
                             b[l](i) +=
-                                (src_data->get_pixel(src_x, src_y)[l] -
-                                 src_data->get_pixel(src_x + j, src_y + k)[l]);
+                                (src_data->get_pixel_unsafe(src_x, src_y, l) -
+                                 src_data->get_pixel_unsafe(
+                                     src_x + j, src_y + k, l));
                         }
                     }
                 }
@@ -242,10 +250,8 @@ void CompTargetImage::clone()
             {
                 int src_x = (int)source_image_->get_point(i).x;
                 int src_y = (int)source_image_->get_point(i).y;
-                int tar_x = src_x + (int)(mouse_position_.x -
-                                          source_image_->get_position().x);
-                int tar_y = src_y + (int)(mouse_position_.y -
-                                          source_image_->get_position().y);
+                int tar_x = src_x + bias_x;
+                int tar_y = src_y + bias_y;
                 if (0 <= tar_x && tar_x < image_width_ && 0 <= tar_y &&
                     tar_y < image_height_)
                 {
@@ -291,16 +297,19 @@ void CompTargetImage::clone()
                 b[i] = Eigen::VectorXf::Zero(point_num);
             }
 
+            int bias_x =
+                (int)(mouse_position_.x - source_image_->get_position().x);
+            int bias_y =
+                (int)(mouse_position_.y - source_image_->get_position().y);
+
             for (int i = 0; i < point_num; i++)
             {
                 // Make the formula No. i. Point is in the coordinate of the
                 // source image.
                 int src_x = (int)source_image_->get_point(i).x;
                 int src_y = (int)source_image_->get_point(i).y;
-                int tar_x = src_x + (int)(mouse_position_.x -
-                                          source_image_->get_position().x);
-                int tar_y = src_y + (int)(mouse_position_.y -
-                                          source_image_->get_position().y);
+                int tar_x = src_x + bias_x;
+                int tar_y = src_y + bias_y;
 
                 // For each neighbor of the point
                 for (int j = -1; j <= 1; j++)
@@ -314,7 +323,8 @@ void CompTargetImage::clone()
                             // Only consider 4 neighbors within the image
                             continue;
                         }
-                        if (mask->get_pixel(src_x + j, src_y + k)[0] == 0)
+                        if (mask->get_pixel_unsafe(src_x + j, src_y + k, 0) ==
+                            0)
                         {
                             // Add f_q to the right side, which is the edge of
                             // the target image
@@ -324,7 +334,8 @@ void CompTargetImage::clone()
                                 tar_y + k, 0, image_height_ - 1);
                             for (int l = 0; l < channel_num; l++)
                             {
-                                b[l](i) += data_->get_pixel(tarq_x, tarq_y)[l];
+                                b[l](i) +=
+                                    data_->get_pixel_unsafe(tarq_x, tarq_y, l);
                             }
                         }
                         // Add g_q to the right side, which represents the
@@ -345,23 +356,28 @@ void CompTargetImage::clone()
                             // For each point pair (p, q), we choose the one
                             // with bigger gradient.
                             if (fabs(
-                                    data_->get_pixel(tarp_x, tarp_y)[l] -
-                                    data_->get_pixel(tarq_x, tarq_y)[l]) >
+                                    data_->get_pixel_unsafe(tarp_x, tarp_y, l) -
+                                    data_->get_pixel_unsafe(
+                                        tarq_x, tarq_y, l)) >
                                 fabs(
-                                    src_data->get_pixel(src_x, src_y)[l] -
-                                    src_data->get_pixel(
-                                        src_x + j, src_y + k)[l]))
+                                    src_data->get_pixel_unsafe(
+                                        src_x, src_y, l) -
+                                    src_data->get_pixel_unsafe(
+                                        src_x + j, src_y + k, l)))
                             {
                                 b[l](i) +=
-                                    (data_->get_pixel(tarp_x, tarp_y)[l] -
-                                     data_->get_pixel(tarq_x, tarq_y)[l]);
+                                    (data_->get_pixel_unsafe(
+                                         tarp_x, tarp_y, l) -
+                                     data_->get_pixel_unsafe(
+                                         tarq_x, tarq_y, l));
                             }
                             else
                             {
                                 b[l](i) +=
-                                    (src_data->get_pixel(src_x, src_y)[l] -
-                                     src_data->get_pixel(
-                                         src_x + j, src_y + k)[l]);
+                                    (src_data->get_pixel_unsafe(
+                                         src_x, src_y, l) -
+                                     src_data->get_pixel_unsafe(
+                                         src_x + j, src_y + k, l));
                             }
                         }
                     }
@@ -380,10 +396,8 @@ void CompTargetImage::clone()
             {
                 int src_x = (int)source_image_->get_point(i).x;
                 int src_y = (int)source_image_->get_point(i).y;
-                int tar_x = src_x + (int)(mouse_position_.x -
-                                          source_image_->get_position().x);
-                int tar_y = src_y + (int)(mouse_position_.y -
-                                          source_image_->get_position().y);
+                int tar_x = src_x + bias_x;
+                int tar_y = src_y + bias_y;
                 if (0 <= tar_x && tar_x < image_width_ && 0 <= tar_y &&
                     tar_y < image_height_)
                 {
