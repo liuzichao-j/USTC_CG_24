@@ -29,11 +29,16 @@ static void node_copy_texcoord_exec(ExeParams params)
         throw std::runtime_error("Minimal Surface: Need Geometry Input.");
     }
 
+    // Get the original mesh and the texcoord array to copy
     auto halfedge_mesh = operand_to_openmesh(&input);
     auto& texcoord_old = minimal.get_component<MeshComponent>()->texcoordsArray;
-
     auto operand_base = openmesh_to_operand(halfedge_mesh.get());
     auto& texcoord_new = operand_base->get_component<MeshComponent>()->texcoordsArray;
+    if (input.get_component<MeshComponent>()->vertices.size() != texcoord_old.size()) {
+        throw std::runtime_error("Number of vertices Mismatch!");
+    }
+
+    // Copy the texcoord array
     texcoord_new.clear();
     texcoord_new.assign(texcoord_old.begin(), texcoord_old.end());
 
@@ -55,4 +60,4 @@ static void node_register()
 }
 
 NOD_REGISTER_NODE(node_register)
-}  // namespace USTC_CG::node_min_surf
+}  // namespace USTC_CG::node_copy_texcoord

@@ -104,10 +104,13 @@ static void node_create_tri_grid_exec(ExeParams params)
             //     points[(i + 1) * resolution + j][0],
             //     points[(i + 1) * resolution + j][1],
             //     points[(i + 1) * resolution + j][2]);
+
+            // Follow specific order to have all face normals pointing outwards
             faceVertexCounts.push_back(3);
             faceVertexIndices.push_back(i * resolution + j + 1);
             faceVertexIndices.push_back((i + 1) * resolution + j + 1);
             faceVertexIndices.push_back((i + 1) * resolution + j);
+
             // printf(
             //     "triangle at %d %d %d with points (%f, %f, %f), (%f, %f, %f), (%f, %f, %f)\n",
             //     i * resolution + j + 1,

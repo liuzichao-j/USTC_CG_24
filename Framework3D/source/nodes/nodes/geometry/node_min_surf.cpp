@@ -29,10 +29,11 @@ static void node_min_surf_declare(NodeDeclarationBuilder& b)
 {
     // Input-1: Original 3D mesh with boundary
     b.add_input<decl::Geometry>("Input");
+    // Input-2: Boundary Mapping Input, used to construct the boundary conditions on matrix b
     b.add_input<decl::Geometry>("Boundary Mapping Input");
+    // Input-3: WeightType, used to choose the weight type. 0 for the original input, 1 for uniform
+    // weights, 2 for cotangent weights, 3 for Floater weights (Shape-preserving)
     b.add_input<decl::Int>("WeightType").min(0).max(3).default_val(0);
-    // For WeightType: 0 for the original input, 1 for uniform weights, 2 for cotangent weights, 3
-    // for Floater weights (Shape-preserving)
 
     /*
     ** NOTE: You can add more inputs or outputs if necessary. For example, in some cases,
@@ -59,7 +60,7 @@ static void node_min_surf_exec(ExeParams params)
     auto input2 = params.get_input<GOperandBase>("Boundary Mapping Input");
     auto weighttype = params.get_input<int>("WeightType");
 
-    // (TO BE UPDATED) Avoid processing the node when there is no input
+    // Avoid processing the node when there is no input
     if (!input.get_component<MeshComponent>()) {
         throw std::runtime_error("Minimal Surface: Need Geometry Input.");
     }
@@ -69,6 +70,7 @@ static void node_min_surf_exec(ExeParams params)
     }
 
     if (weighttype == 0) {
+        // 0 for the original input, do nothing
         auto& output = input;
         params.set_output("Output", std::move(output));
         return;
@@ -101,6 +103,7 @@ static void node_min_surf_exec(ExeParams params)
     **
     ** (Recall the Poisson equation with Dirichlet Boundary Condition in HW3)
     */
+
     int n = halfedge_mesh->n_vertices();
     // For easy solving, we delete the fixed boundary vertices by giving another index
     std::vector<int> point_to_id(n, -1);
@@ -113,6 +116,7 @@ static void node_min_surf_exec(ExeParams params)
             idcnt++;
         }
     }
+
     // We have equation for minimal surface: Sum_{v_j \in N(i)} w_j*v_j - sum_w * v_i = 0
     // Transform it to Ax = b, where x = [v_1, v_2, ..., v_n].
     Eigen::SparseMatrix<float> A = Eigen::SparseMatrix<float>(idcnt, idcnt);
@@ -125,18 +129,19 @@ static void node_min_surf_exec(ExeParams params)
             continue;
         }
 
-        // calculate the weight sum
-        float sum_w = 0;
         const auto& position = halfedge_mesh->point(vertex_handle);
         const int& index = vertex_handle.idx();
         const int& id = point_to_id[index];
+
+        // calculate the weight sum
+        float sum_w = 0;
 
         if (weighttype != 3) {
             for (const auto& halfedge_handle : vertex_handle.outgoing_halfedges()) {
                 // get one neighbor vertex
                 const auto& v = halfedge_handle.to();
                 float w = 0;
-                // calculate different weights
+
                 if (weighttype == 1) {
                     // Uniform weights
                     w = 1;
@@ -145,6 +150,7 @@ static void node_min_surf_exec(ExeParams params)
                     // Cotangent weights
                     const auto& v1 = halfedge_handle.next().to();
                     const auto& v2 = halfedge_handle.opp().next().to();
+                    // Two points besides the vertex v
                     const auto vec10 = halfedge_mesh->point(v1) - position;
                     const auto vec11 = halfedge_mesh->point(v1) - halfedge_mesh->point(v);
                     float cos1 = vec10.dot(vec11) / (vec10.norm() * vec11.norm());
@@ -185,11 +191,15 @@ static void node_min_surf_exec(ExeParams params)
             std::vector<std::vector<double>> new_positions;
             auto start_edge = vertex_handle.outgoing_halfedges().begin().handle();
             OpenMesh::SmartHalfedgeHandle edge = start_edge;
+
+            // Get the 1-ring neighborhood of the vertex and their positions, on clock-wise order
             do {
                 const auto& v = edge.to();
                 old_positions.push_back(halfedge_mesh->point(v));
                 edge = edge.prev().opp();
             } while (edge != start_edge);
+
+            // Calculate the angles between the edges
             for (int i = 0; i < old_positions.size(); i++) {
                 const auto& v1 = old_positions[i];
                 const auto& v2 = old_positions[(i + 1) % old_positions.size()];
@@ -207,6 +217,8 @@ static void node_min_surf_exec(ExeParams params)
                 double theta1 = acos(cos1);
                 angles.push_back(theta1);
             }
+
+            // Normalize the angles, so that the sum of angles is 2pi
             double sum_angle = 0.0f;
             for (const auto& angle : angles) {
                 sum_angle += angle;
@@ -214,7 +226,8 @@ static void node_min_surf_exec(ExeParams params)
             for (int i = 0; i < angles.size(); i++) {
                 angles[i] *= 2 * acos(-1) / sum_angle;
             }
-            // We want to have p = 0, p_1 = (r, 0) and sum of angles = 2pi
+
+            // We want to have p = 0, p_1 = (|x_1|, 0), calculate the new positions
             double nowangle = 0.0f;
             for (int i = 0; i < old_positions.size(); i++) {
                 const auto& v = old_positions[i];
@@ -226,6 +239,7 @@ static void node_min_surf_exec(ExeParams params)
                 new_positions.push_back(new_position);
                 nowangle += angles[i];
             }
+
             // Step 2: For each point p_l, found the opposite point p_r(l) and p_r(l)+1, then
             // calculate mu_kl.
             int n = old_positions.size();
@@ -239,6 +253,7 @@ static void node_min_surf_exec(ExeParams params)
                 else {
                     k1 = new_positions[i][1] / new_positions[i][0];
                 }
+
                 // Line p_r - p_r+1
                 int r = -1;
                 for (int j = 1; j < n; j++) {
@@ -248,6 +263,7 @@ static void node_min_surf_exec(ExeParams params)
                         r = nowr;
                         break;
                     }
+
                     double k2;
                     if (fabs(new_positions[nowr1][0] - new_positions[nowr][0]) < 1e-15) {
                         k2 = (new_positions[nowr1][1] - new_positions[nowr][1]) / 1e-15;
@@ -257,6 +273,7 @@ static void node_min_surf_exec(ExeParams params)
                              (new_positions[nowr1][0] - new_positions[nowr][0]);
                     }
                     double b2 = new_positions[nowr][1] - k2 * new_positions[nowr][0];
+
                     double x;
                     if (fabs(k1 - k2) < 1e-15) {
                         x = b2 / 1e-15;
@@ -264,6 +281,7 @@ static void node_min_surf_exec(ExeParams params)
                     else {
                         x = b2 / (k1 - k2);
                     }
+
                     if ((x - new_positions[nowr1][0]) * (x - new_positions[nowr][0]) <= 0) {
                         // x is in line p_r - p_r+1
                         r = nowr;
@@ -273,6 +291,7 @@ static void node_min_surf_exec(ExeParams params)
                 if (r == -1) {
                     throw std::runtime_error("Cannot find opposite point");
                 }
+
                 // Calculate mu_kl, which is related to the barycentric coordinates of triangle p_i,
                 // p_r, p_r+1
                 const auto& p1 = new_positions[i];
@@ -282,7 +301,8 @@ static void node_min_surf_exec(ExeParams params)
                                         p1[0] * p2[1] + p2[0] * p3[1] + p3[0] * p1[1] -
                                         p1[1] * p2[0] - p2[1] * p3[0] - p3[1] * p1[0]);
                 if (area < 1e-6f) {
-                    throw std::runtime_error("Area too small");
+                    // The triangle is too small, usually i = r or r+1
+                    throw std::runtime_error("Fake opposite point");
                 }
                 // We have p = 0.
                 float area1 = 0.5f * fabsf(p2[0] * p3[1] - p2[1] * p3[0]);
@@ -304,17 +324,20 @@ static void node_min_surf_exec(ExeParams params)
                 //     i,
                 //     mu[(r + 1) % n][i]);
             }
+
             // Step 3: Calculate the weight of each edge
             int cnt = 0;
             edge = start_edge;
             do {
                 const auto& v = edge.to();
+                // The weight is the average of mu_kl
                 float w = 0;
                 for (int i = 0; i < n; i++) {
                     w += mu[cnt][i];
                 }
                 w = w / n;
                 // printf("w[%d] = %f\n", cnt, w);
+
                 if (v.is_boundary()) {
                     b(id, 0) += w * fixed_positions[v.idx()][0];
                     b(id, 1) += w * fixed_positions[v.idx()][1];
@@ -326,6 +349,7 @@ static void node_min_surf_exec(ExeParams params)
                 cnt++;
                 edge = edge.prev().opp();
             } while (edge != start_edge);
+            // We have normalized the weights.
             sum_w = 1;
         }
         triplets.push_back(Eigen::Triplet<float>(id, id, sum_w));
@@ -357,18 +381,20 @@ static void node_min_surf_exec(ExeParams params)
     ** representation and numerical methods used.
     **
     */
+
+    // Construct the sparse matrix A and solve the linear system
     A.setFromTriplets(triplets.begin(), triplets.end());
-    // Solve the linear system
     solver.compute(A);
     if (solver.info() != Eigen::Success) {
         // Decomposition failed
-        throw std::exception("Decomposition failed");
+        throw std::runtime_error("Decomposition failed");
     }
     Eigen::MatrixXf x = solver.solve(b);
     if (solver.info() != Eigen::Success) {
         // Solve failed
-        throw std::exception("Solve failed");
+        throw std::runtime_error("Solve failed");
     }
+
     // Update geometry with new vertex positions.
     for (const auto& vertex_handle : halfedge_mesh->vertices()) {
         if (!vertex_handle.is_boundary()) {
@@ -392,6 +418,7 @@ static void node_min_surf_exec(ExeParams params)
     auto& texcoord = operand_base->get_component<MeshComponent>()->texcoordsArray;
     texcoord.clear();
     for (const auto& vertex_handle : halfedge_mesh->vertices()) {
+        // Just use the (x, y) coordinates as texture coordinates (u, v)
         if (!vertex_handle.is_boundary()) {
             const int& index = vertex_handle.idx();
             const int& id = point_to_id[index];

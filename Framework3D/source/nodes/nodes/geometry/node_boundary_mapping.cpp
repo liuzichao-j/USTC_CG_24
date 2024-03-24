@@ -46,7 +46,7 @@ static void node_map_boundary_to_circle_exec(ExeParams params)
     auto input = params.get_input<GOperandBase>("Input");
     // auto area_scale = params.get_input<int>("Area Scale");
 
-    // (TO BE UPDATED) Avoid processing the node when there is no input
+    // Avoid processing the node when there is no input
     if (!input.get_component<MeshComponent>()) {
         throw std::runtime_error("Boundary Mapping: Need Geometry Input.");
     }
@@ -59,7 +59,7 @@ static void node_map_boundary_to_circle_exec(ExeParams params)
     */
     auto halfedge_mesh = operand_to_openmesh(&input);
 
-    // Traverse all boundary edges and calculate the total length.
+    // Traverse all boundary edges, get every edge's length and calculate the total length.
     OpenMesh::SmartHalfedgeHandle start_halfedge;
     std::vector<float> lens;
     for (const auto& halfedge_handle : halfedge_mesh->halfedges()) {
@@ -114,6 +114,8 @@ static void node_map_boundary_to_circle_exec(ExeParams params)
     ** Note: It would be better to normalize the boundary to a unit circle in [0,1]x[0,1] for
     ** texture mapping.
     */
+
+    // Traverse all boundary edges and get the place of each boundary vertex on the circle
     int cnt = 0;
     if (start_halfedge.is_valid()) {
         auto halfedge_handle = start_halfedge;
@@ -198,7 +200,7 @@ static void node_map_boundary_to_square_exec(ExeParams params)
     // Get the input from params
     auto input = params.get_input<GOperandBase>("Input");
 
-    // (TO BE UPDATED) Avoid processing the node when there is no input
+    // Avoid processing the node when there is no input
     if (!input.get_component<MeshComponent>()) {
         throw std::runtime_error("Input does not contain a mesh");
     }
@@ -208,7 +210,7 @@ static void node_map_boundary_to_square_exec(ExeParams params)
     */
     auto halfedge_mesh = operand_to_openmesh(&input);
 
-    // Traverse all boundary edges and calculate the total length.
+    // Traverse all boundary edges, get every edge's length and calculate the total length.
     OpenMesh::SmartHalfedgeHandle start_halfedge;
     std::vector<float> lens;
     for (const auto& halfedge_handle : halfedge_mesh->halfedges()) {
@@ -247,10 +249,13 @@ static void node_map_boundary_to_square_exec(ExeParams params)
     ** Note: It would be better to normalize the boundary to a unit circle in [0,1]x[0,1] for
     ** texture mapping.
     */
-    int cnt = 0;
+
+    
     // Find points on the four corners of the square
+    int cnt = 0;
     // Store the index of the boundary edge which starts from the corner point
     int corner_cnt[4] = { -1, -1, -1, -1 };
+    // Store the length from the start point to a corner point
     float corner_length[5] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
     if (start_halfedge.is_valid()) {
         auto halfedge_handle = start_halfedge;
@@ -285,6 +290,8 @@ static void node_map_boundary_to_square_exec(ExeParams params)
     if (corner_cnt[0] == -1 || corner_cnt[1] == -1 || corner_cnt[2] == -1 || corner_cnt[3] == -1) {
         throw std::runtime_error("Cannot find 4 corners");
     }
+
+    // Traverse all boundary edges and get the place of each boundary vertex on the square
     cnt = 0;
     if (start_halfedge.is_valid()) {
         auto halfedge_handle = start_halfedge;
