@@ -2,7 +2,7 @@
 
 > 作业步骤：
 > - 查看[文档](documents/README.md)，内含多个小教程，请先阅读 [documents/README.md](documents/README.md)，其中包含了所有文档的阅读引导
-> - 在[项目目录](../../Framework2D/)中编写作业代码
+> - 在[项目目录](../../Framework3D/)中编写作业代码
 > - 按照[作业规范](../README.md)提交作业
 
 ## 作业递交
@@ -32,13 +32,13 @@
 
 ## 提供的材料
 
-依照上述要求和方法，根据说明文档`(1) documents`和作业框架`(2) Framework2D`的内容进行练习。
+依照上述要求和方法，根据说明文档`(1) documents`和作业框架`(2) Framework3D`的内容进行练习。
 
 ### (1) 说明文档 `documents` [->](documents/) 
 
 本次作业的要求说明和一些辅助资料
 
-### (2) 作业项目 `Framework2D` [->](../../Framework2D/) 
+### (2) 作业项目 `Framework3D` [->](../../Framework3D/) 
 
 作业的基础代码框架
 

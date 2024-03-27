@@ -47,3 +47,9 @@
 1. 画图小程序 MiniDraw [->](./1_mini_draw/)
 
 2. 图像变形 ImageWarping [->](./2_image_warping/)
+
+3. 图像融合 Poisson Image Editing [->](./3_poisson_image_editing/)
+
+4. 曲面参数化 Tutte Parameterzation [->](./4_tutte_parametrzation/)
+
+5. ARAP参数化 ARAP Parameterzation [->](./5_arap_parametrzation/)
