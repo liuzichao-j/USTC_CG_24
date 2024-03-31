@@ -131,6 +131,48 @@ static void node_create_tri_grid_exec(ExeParams params)
     params.set_output("Geometry", std::move(operand_base));
 }
 
+static void node_create_tri_declare(NodeDeclarationBuilder &b)
+{
+    b.add_input<decl::Float>("size").min(1).max(20);
+    b.add_output<decl::Geometry>("Geometry");
+}
+
+static void node_create_tri_exec(ExeParams params)
+{
+    float size = params.get_input<float>("size");
+    GOperandBase operand_base;
+    std::shared_ptr<MeshComponent> mesh = std::make_shared<MeshComponent>(&operand_base);
+    operand_base.attach_component(mesh);
+
+    auto &points = mesh->vertices;
+    auto &texcoord = mesh->texcoordsArray;
+    auto &faceVertexIndices = mesh->faceVertexIndices;
+    auto &faceVertexCounts = mesh->faceVertexCounts;
+
+    points.push_back(pxr::GfVec3f(0, 0, 0));
+    points.push_back(pxr::GfVec3f(size, 0, 0));
+    points.push_back(pxr::GfVec3f(0, size, 0));
+    points.push_back(pxr::GfVec3f(0, 0, size));
+    texcoord.push_back(pxr::GfVec2f(0, 0));
+    texcoord.push_back(pxr::GfVec2f(1, 0));
+    texcoord.push_back(pxr::GfVec2f(0, 1));
+    texcoord.push_back(pxr::GfVec2f(0, 0));
+    faceVertexCounts.push_back(3);
+    faceVertexIndices.push_back(0);
+    faceVertexIndices.push_back(2);
+    faceVertexIndices.push_back(1);
+    faceVertexCounts.push_back(3);
+    faceVertexIndices.push_back(0);
+    faceVertexIndices.push_back(3);
+    faceVertexIndices.push_back(2);
+    faceVertexCounts.push_back(3);
+    faceVertexIndices.push_back(0);
+    faceVertexIndices.push_back(1);
+    faceVertexIndices.push_back(3);
+
+    params.set_output("Geometry", std::move(operand_base));
+}
+
 static void node_register()
 {
 #define CreateMesh(lower, Upper)                             \
@@ -145,6 +187,7 @@ static void node_register()
     CreateMesh(grid, Grid);
     // CreateMesh(ico_sphere, Ico Sphere);
     CreateMesh(tri_grid, Triangle Grid);
+    CreateMesh(tri, Triangle);
 }
 
 NOD_REGISTER_NODE(node_register)

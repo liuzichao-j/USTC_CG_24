@@ -117,6 +117,13 @@ static void node_min_surf_exec(ExeParams params)
         }
     }
 
+    if(idcnt == 0) {
+        // No internal vertices, return the original input
+        auto& output = input;
+        params.set_output("Output", std::move(output));
+        return;
+    }
+
     // We have equation for minimal surface: Sum_{v_j \in N(i)} w_j*v_j - sum_w * v_i = 0
     // Transform it to Ax = b, where x = [v_1, v_2, ..., v_n].
     Eigen::SparseMatrix<float> A = Eigen::SparseMatrix<float>(idcnt, idcnt);
