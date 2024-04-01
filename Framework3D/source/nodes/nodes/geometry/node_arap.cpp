@@ -66,6 +66,39 @@ inline void flatten_triangles(
     }
 }
 
+inline void fix_points(
+    std::shared_ptr<USTC_CG::PolyMesh>& halfedge_mesh,
+    int& fixed1,
+    int& fixed2,
+    int option = 0)
+{
+    // Fix two points.
+    // option = 0 for the two points with the largest distance.
+    // option = 1 for the two points on the first edge.
+    if (option = 0) {
+        float maxdist = 0;
+        for (auto vertex_handle1 : halfedge_mesh->vertices()) {
+            for (auto vertex_handle2 : halfedge_mesh->vertices()) {
+                float dist =
+                    (halfedge_mesh->point(vertex_handle1) - halfedge_mesh->point(vertex_handle2))
+                        .norm();
+                if (dist > maxdist) {
+                    maxdist = dist;
+                    fixed1 = vertex_handle1.idx();
+                    fixed2 = vertex_handle2.idx();
+                }
+            }
+        }
+    }
+    else if (option = 1) {
+        auto fixed_edge = halfedge_mesh->edges_begin()->halfedge();
+        int fixed_face_idx = fixed_edge.face().idx();
+        fixed1 = fixed_edge.from().idx();
+        fixed2 = fixed_edge.to().idx();
+    }
+    return;
+}
+
 inline void set_output(
     int& n,
     std::vector<Eigen::Vector2f>& u,
@@ -235,10 +268,8 @@ static void node_arap_exec(ExeParams params)
     }
     A.setFromTriplets(triplets.begin(), triplets.end());
     // Fix two points.
-    auto fixed_edge = halfedge_mesh->edges_begin()->halfedge();
-    int fixed_face_idx = fixed_edge.face().idx();
-    const int fixed1 = fixed_edge.from().idx();
-    const int fixed2 = fixed_edge.to().idx();
+    int fixed1 = -1, fixed2 = -1;
+    fix_points(halfedge_mesh, fixed1, fixed2, 0);
     for (int i = 0; i < n; i++) {
         if (i != fixed1) {
             A.coeffRef(fixed1, i) = 0;
@@ -373,16 +404,18 @@ static void node_arap_exec(ExeParams params)
         //         }
         //     }
         // }
-        for (int i = 0; i < 3; i++) {
-            if (x[fixed_face_idx][i].first == fixed1) {
-                b.row(fixed1) = Eigen::Vector2f(
-                    x[fixed_face_idx][i].second.x(), x[fixed_face_idx][i].second.y());
-            }
-            if (x[fixed_face_idx][i].first == fixed2) {
-                b.row(fixed2) = Eigen::Vector2f(
-                    x[fixed_face_idx][i].second.x(), x[fixed_face_idx][i].second.y());
-            }
-        }
+        b.row(fixed1) = Eigen::Vector2f(0, 0);
+        b.row(fixed2) = Eigen::Vector2f(u[fixed2].x(), u[fixed2].y());
+        // for (int i = 0; i < 3; i++) {
+        //     if (x[fixed_face_idx][i].first == fixed1) {
+        //         b.row(fixed1) = Eigen::Vector2f(
+        //             x[fixed_face_idx][i].second.x(), x[fixed_face_idx][i].second.y());
+        //     }
+        //     if (x[fixed_face_idx][i].first == fixed2) {
+        //         b.row(fixed2) = Eigen::Vector2f(
+        //             x[fixed_face_idx][i].second.x(), x[fixed_face_idx][i].second.y());
+        //     }
+        // }
         // Solve the linear system.
         Eigen::MatrixXf u_new = solver.solve(b);
         if (solver.info() != Eigen::Success) {
@@ -396,7 +429,6 @@ static void node_arap_exec(ExeParams params)
 
     // Step 4-Iteration: Repeat Steps 2 and 3 to refine parameterization.
     // Implemented by the while loop.
-
     set_output(n, u, halfedge_mesh, params);
 }
 
@@ -452,19 +484,7 @@ static void node_asap_exec(ExeParams params)
     // We notice that these equations are linear, without constant term. So we need to fix two
     // points to avoid zero solution.
     int fixed1 = -1, fixed2 = -1;
-    float maxdist = 0;
-    for (auto vertex_handle1 : halfedge_mesh->vertices()) {
-        for (auto vertex_handle2 : halfedge_mesh->vertices()) {
-            float dist =
-                (halfedge_mesh->point(vertex_handle1) - halfedge_mesh->point(vertex_handle2))
-                    .norm();
-            if (dist > maxdist) {
-                maxdist = dist;
-                fixed1 = vertex_handle1.idx();
-                fixed2 = vertex_handle2.idx();
-            }
-        }
-    }
+    fix_points(halfedge_mesh, fixed1, fixed2, 0);
 
     // For u, it is same as ARAP. Sum_{j \in N(i)} (cot(\theta_ij) + cot(\theta_ji)) * (u_i - u_j) =
     // Sum_{j \in N(i)} (cot(\theta_ij) L_t(i, j) + cot(\theta_ji) L_t(j, i)) * (x_i - x_j)
@@ -844,24 +864,8 @@ static void node_hybrid_exec(ExeParams params)
     }
     A.setFromTriplets(triplets.begin(), triplets.end());
     // Fix two points.
-    // auto fixed_edge = halfedge_mesh->edges_begin()->halfedge();
-    // int fixed_face_idx = fixed_edge.face().idx();
-    // const int fixed1 = fixed_edge.from().idx();
-    // const int fixed2 = fixed_edge.to().idx();
     int fixed1 = -1, fixed2 = -1;
-    float maxdist = 0;
-    for (auto vertex_handle1 : halfedge_mesh->vertices()) {
-        for (auto vertex_handle2 : halfedge_mesh->vertices()) {
-            float dist =
-                (halfedge_mesh->point(vertex_handle1) - halfedge_mesh->point(vertex_handle2))
-                    .norm();
-            if (dist > maxdist) {
-                maxdist = dist;
-                fixed1 = vertex_handle1.idx();
-                fixed2 = vertex_handle2.idx();
-            }
-        }
-    }
+    fix_points(halfedge_mesh, fixed1, fixed2, 0);
     for (int i = 0; i < n; i++) {
         if (i != fixed1) {
             A.coeffRef(fixed1, i) = 0;
@@ -1006,7 +1010,6 @@ static void node_hybrid_exec(ExeParams params)
 
     // Step 4-Iteration: Repeat Steps 2 and 3 to refine parameterization.
     // Implemented by the while loop.
-
     set_output(n, u, halfedge_mesh, params);
 }
 
