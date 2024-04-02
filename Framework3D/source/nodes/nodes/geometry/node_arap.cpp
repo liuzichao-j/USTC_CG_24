@@ -74,7 +74,7 @@ inline void fix_points(
 {
     // Fix two points. option = 0 for the two points with the largest distance. option = 1 for the
     // two points on the first edge.
-    if (option = 0) {
+    if (option == 0) {
         float maxdist = 0;
         for (auto vertex_handle1 : halfedge_mesh->vertices()) {
             for (auto vertex_handle2 : halfedge_mesh->vertices()) {
@@ -89,7 +89,7 @@ inline void fix_points(
             }
         }
     }
-    else if (option = 1) {
+    else if (option == 1) {
         auto fixed_edge = halfedge_mesh->edges_begin()->halfedge();
         fixed1 = fixed_edge.from().idx();
         fixed2 = fixed_edge.to().idx();
@@ -299,7 +299,9 @@ static void node_arap_exec(ExeParams params)
             S += cot_theta[halfedge_handle.next().next().idx()] * (u2 - u3) * (x2 - x3).transpose();
             S += cot_theta[halfedge_handle.idx()] * (u3 - u1) * (x3 - x1).transpose();
             Eigen::JacobiSVD<Eigen::Matrix2f> svd(S, Eigen::ComputeFullU | Eigen::ComputeFullV);
-            L[face_handle.idx()] = svd.matrixU() * svd.matrixV().transpose();
+            L[face_handle.idx()] = (svd.singularValues()[0] + svd.singularValues()[1]) / 2 *
+                                   svd.matrixU() * svd.matrixV().transpose();
+
             // auto I = L[face_handle.idx()] * L[face_handle.idx()].transpose() -
             // Eigen::Matrix2f::Identity(); if (I.norm() > 1e-6) {
             //     printf("We have U = {%.6f, %.6f, %.6f, %.6f}, V = {%.6f, %.6f, %.6f, %.6f}\n",
