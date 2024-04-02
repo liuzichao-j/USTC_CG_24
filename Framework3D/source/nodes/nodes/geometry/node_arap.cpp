@@ -299,9 +299,7 @@ static void node_arap_exec(ExeParams params)
             S += cot_theta[halfedge_handle.next().next().idx()] * (u2 - u3) * (x2 - x3).transpose();
             S += cot_theta[halfedge_handle.idx()] * (u3 - u1) * (x3 - x1).transpose();
             Eigen::JacobiSVD<Eigen::Matrix2f> svd(S, Eigen::ComputeFullU | Eigen::ComputeFullV);
-            L[face_handle.idx()] = (svd.singularValues()[0] + svd.singularValues()[1]) / 2 *
-                                   svd.matrixU() * svd.matrixV().transpose();
-
+            L[face_handle.idx()] = svd.matrixU() * svd.matrixV().transpose();
             // auto I = L[face_handle.idx()] * L[face_handle.idx()].transpose() -
             // Eigen::Matrix2f::Identity(); if (I.norm() > 1e-6) {
             //     printf("We have U = {%.6f, %.6f, %.6f, %.6f}, V = {%.6f, %.6f, %.6f, %.6f}\n",
