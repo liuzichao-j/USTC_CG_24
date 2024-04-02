@@ -258,20 +258,10 @@ static void node_arap_exec(ExeParams params)
     // int fixed1 = -1, fixed2 = -1;
     // fix_points(halfedge_mesh, fixed1, fixed2, 0);
     // for (int i = 0; i < n; i++) {
-    //     if (i != fixed1) {
-    //         A.coeffRef(fixed1, i) = 0;
-    //     }
-    //     else {
-    //         A.coeffRef(fixed1, i) = 1;
-    //     }
+    //     A.coeffRef(fixed1, i) = (i == fixed1) ? 1 : 0;
     // }
     // for (int i = 0; i < n; i++) {
-    //     if (i != fixed2) {
-    //         A.coeffRef(fixed2, i) = 0;
-    //     }
-    //     else {
-    //         A.coeffRef(fixed2, i) = 1;
-    //     }
+    //     A.coeffRef(fixed2, i) = (i == fixed2) ? 1 : 0;
     // }
     solver.compute(A);
     if (solver.info() != Eigen::Success) {
@@ -300,28 +290,6 @@ static void node_arap_exec(ExeParams params)
             S += cot_theta[halfedge_handle.idx()] * (u3 - u1) * (x3 - x1).transpose();
             Eigen::JacobiSVD<Eigen::Matrix2f> svd(S, Eigen::ComputeFullU | Eigen::ComputeFullV);
             L[face_handle.idx()] = svd.matrixU() * svd.matrixV().transpose();
-            // auto I = L[face_handle.idx()] * L[face_handle.idx()].transpose() -
-            // Eigen::Matrix2f::Identity(); if (I.norm() > 1e-6) {
-            //     printf("We have U = {%.6f, %.6f, %.6f, %.6f}, V = {%.6f, %.6f, %.6f, %.6f}\n",
-            //            svd.matrixU()(0, 0), svd.matrixU()(0, 1), svd.matrixU()(1, 0),
-            //            svd.matrixU()(1, 1), svd.matrixV()(0, 0), svd.matrixV()(0, 1),
-            //            svd.matrixV()(1, 0), svd.matrixV()(1, 1));
-            //     printf("We have L = {%.6f, %.6f, %.6f, %.6f}\n", L[face_handle.idx()](0, 0),
-            //            L[face_handle.idx()](0, 1), L[face_handle.idx()](1, 0),
-            //            L[face_handle.idx()](1, 1));
-            //     printf("We have sigma = {%.6f, %.6f}\n", svd.singularValues()(0),
-            //            svd.singularValues()(1));
-            //     printf("We have I = {%.6f, %.6f, %.6f, %.6f}\n", I(0, 0), I(0, 1), I(1, 0),
-            //            I(1, 1));
-            //     throw std::runtime_error("SVD failed.");
-            // }
-            // printf(
-            //     "arap: L_%d = {%.6f, %.6f, %.6f, %.6f}\n",
-            //     face_handle.idx(),
-            //     L[face_handle.idx()](0, 0),
-            //     L[face_handle.idx()](0, 1),
-            //     L[face_handle.idx()](1, 0),
-            //     L[face_handle.idx()](1, 1));
         }
 
         // Step 3-Global Phase: With Lt fixed, update parameter coordinates(u) by solving a
@@ -350,47 +318,6 @@ static void node_arap_exec(ExeParams params)
             b.row(halfedge_handle.to().idx()) +=
                 cot_theta[halfedge_handle.idx()] * L[face_handle.idx()] * (x1 - x3);
         }
-        // for (auto vertex_handle : halfedge_mesh->vertices()) {
-        //     for (auto halfedge_handle : vertex_handle.outgoing_halfedges()) {
-        //         const int from = vertex_handle.idx();
-        //         const int to = halfedge_handle.to().idx();
-        //         const OpenMesh::SmartFaceHandle face[2] = { halfedge_handle.face(),
-        //                                                     halfedge_handle.opp().face() };
-        //         float cot[2];
-        //         for (int i = 0; i < 2; i++) {
-        //             if (face[i].is_valid()) {
-        //                 for (int j = 0; j < 3; j++) {
-        //                     int k = (j + 1) % 3;
-        //                     if ((x[face[i].idx()][j].first == from &&
-        //                          x[face[i].idx()][k].first == to) ||
-        //                         (x[face[i].idx()][j].first == to &&
-        //                          x[face[i].idx()][k].first == from)) {
-        //                         int l = (j + 2) % 3;
-        //                         cot[i] = 1 / tan(acos(((x[face[i].idx()][j].second -
-        //                                                 x[face[i].idx()][l].second)
-        //                                                    .normalized())
-        //                                                   .dot(((x[face[i].idx()][k].second -
-        //                                                          x[face[i].idx()][l].second)
-        //                                                             .normalized()))));
-        //                         if (x[face[i].idx()][j].first == from) {
-        //                             b.row(from) +=
-        //                                 cot[i] * L[face[i].idx()] *
-        //                                 (x[face[i].idx()][j].second -
-        //                                 x[face[i].idx()][k].second);
-        //                         }
-        //                         else {
-        //                             b.row(from) +=
-        //                                 cot[i] * L[face[i].idx()] *
-        //                                 (x[face[i].idx()][k].second -
-        //                                 x[face[i].idx()][j].second);
-        //                         }
-        //                         break;
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
         // b.row(fixed1) = Eigen::Vector2f(0, 0);
         // b.row(fixed2) = Eigen::Vector2f(u[fixed2].x(), u[fixed2].y());
         // for (int i = 0; i < 3; i++) {
@@ -502,8 +429,6 @@ static void node_asap_exec(ExeParams params)
                     id4 = i;
                 }
             }
-            // printf("from = %d, to = %d, face = %d, faceopp = %d, id1 = %d, id2 = %d, id3 = %d,
-            // id4 = %d\n", from, to, face, faceopp, id1, id2, id3, id4);
             // x axis
             triplets.push_back(
                 Eigen::Triplet<float>(2 * from, 2 * from, cot_theta[edge] + cot_theta[edgeopp]));
@@ -672,32 +597,6 @@ static void node_asap_exec(ExeParams params)
                 cot_theta[edge3] * (x3 - x1).y() * (x3 - x1).x()));
     }
     A.setFromTriplets(triplets.begin(), triplets.end());
-    // for (int i = 0; i < 2 * n + 2 * t; i++) {
-    //     for (int j = 0; j < 2 * n + 2 * t; j++) {
-    //         printf("%.6f ", A.coeff(i, j));
-    //     }
-    //     printf("\n");
-    // }
-    // for (int i = 0; i < 3; i++) {
-    //     if (x[fixed_face_idx][i].first == fixed1) {
-    //         b(2 * fixed1) = x[fixed_face_idx][i].second.x();
-    //         b(2 * fixed1 + 1) = x[fixed_face_idx][i].second.y();
-    //         printf(
-    //             "fixed1: %d, (%.6f, %.6f)\n",
-    //             fixed1,
-    //             x[fixed_face_idx][i].second.x(),
-    //             x[fixed_face_idx][i].second.y());
-    //     }
-    //     if (x[fixed_face_idx][i].first == fixed2) {
-    //         b(2 * fixed2) = x[fixed_face_idx][i].second.x();
-    //         b(2 * fixed2 + 1) = x[fixed_face_idx][i].second.y();
-    //         printf(
-    //             "fixed2: %d, (%.6f, %.6f)\n",
-    //             fixed2,
-    //             x[fixed_face_idx][i].second.x(),
-    //             x[fixed_face_idx][i].second.y());
-    //     }
-    // }
     b(2 * fixed1) = 0;
     b(2 * fixed1 + 1) = 0;
     b(2 * fixed2) = 1;
@@ -711,13 +610,6 @@ static void node_asap_exec(ExeParams params)
     if (solver.info() != Eigen::Success) {
         throw std::runtime_error("Solve failed.");
     }
-    // for (int i = 0; i < n; i++) {
-    //     printf("solution u_%d = (%f, %f)\n", i, sol[2 * i], sol[2 * i + 1]);
-    // }
-    // for (int i = 0; i < t; i++) {
-    //     printf("solution a_%d = %f, b_%d = %f\n", i, sol[2 * n + 2 * i], i, sol[2 * n + 2 * i +
-    //     1]);
-    // }
     std::vector<Eigen::Vector2f> u(n);
     for (int i = 0; i < n; i++) {
         u[i] = Eigen::Vector2f(sol[2 * i], sol[2 * i + 1]);
@@ -934,6 +826,8 @@ static void node_hybrid_exec(ExeParams params)
             b.row(halfedge_handle.to().idx()) +=
                 cot_theta[halfedge_handle.idx()] * L[face_handle.idx()] * (x1 - x3);
         }
+        b.row(fixed1) = Eigen::Vector2f(0, 0);
+        b.row(fixed2) = Eigen::Vector2f(u[fixed2].x(), u[fixed2].y());
         // for (int i = 0; i < 3; i++) {
         //     if (x[fixed_face_idx][i].first == fixed1) {
         //         b.row(fixed1) = Eigen::Vector2f(
@@ -944,8 +838,6 @@ static void node_hybrid_exec(ExeParams params)
         //             x[fixed_face_idx][i].second.x(), x[fixed_face_idx][i].second.y());
         //     }
         // }
-        b.row(fixed1) = Eigen::Vector2f(0, 0);
-        b.row(fixed2) = Eigen::Vector2f(u[fixed2].x(), u[fixed2].y());
         // Solve the linear system.
         Eigen::MatrixXf u_new = solver.solve(b);
         if (solver.info() != Eigen::Success) {
