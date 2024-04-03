@@ -91,6 +91,9 @@ inline void fix_points(
     }
     else if (option == 1) {
         auto fixed_edge = halfedge_mesh->edges_begin()->halfedge();
+        if(fixed_edge.face().idx() == -1) {
+            fixed_edge = fixed_edge.opp();
+        }
         fixed1 = fixed_edge.from().idx();
         fixed2 = fixed_edge.to().idx();
     }
@@ -255,14 +258,17 @@ static void node_arap_exec(ExeParams params)
     }
     A.setFromTriplets(triplets.begin(), triplets.end());
     // Fix two points.
-    // int fixed1 = -1, fixed2 = -1;
-    // fix_points(halfedge_mesh, fixed1, fixed2, 0);
-    // for (int i = 0; i < n; i++) {
-    //     A.coeffRef(fixed1, i) = (i == fixed1) ? 1 : 0;
-    // }
-    // for (int i = 0; i < n; i++) {
-    //     A.coeffRef(fixed2, i) = (i == fixed2) ? 1 : 0;
-    // }
+    int fixed1 = -1, fixed2 = -1, fixed_face_idx = halfedge_mesh->edges_begin()->halfedge().face().idx();
+    fix_points(halfedge_mesh, fixed1, fixed2, 1);
+    if(fixed_face_idx == -1) {
+        fixed_face_idx = halfedge_mesh->edges_begin()->halfedge().opp().face().idx();
+    }
+    for (int i = 0; i < n; i++) {
+        A.coeffRef(fixed1, i) = (i == fixed1) ? 1 : 0;
+    }
+    for (int i = 0; i < n; i++) {
+        A.coeffRef(fixed2, i) = (i == fixed2) ? 1 : 0;
+    }
     solver.compute(A);
     if (solver.info() != Eigen::Success) {
         throw std::runtime_error("Decomposition failed.");
@@ -320,16 +326,16 @@ static void node_arap_exec(ExeParams params)
         }
         // b.row(fixed1) = Eigen::Vector2f(0, 0);
         // b.row(fixed2) = Eigen::Vector2f(u[fixed2].x(), u[fixed2].y());
-        // for (int i = 0; i < 3; i++) {
-        //     if (x[fixed_face_idx][i].first == fixed1) {
-        //         b.row(fixed1) = Eigen::Vector2f(
-        //             x[fixed_face_idx][i].second.x(), x[fixed_face_idx][i].second.y());
-        //     }
-        //     if (x[fixed_face_idx][i].first == fixed2) {
-        //         b.row(fixed2) = Eigen::Vector2f(
-        //             x[fixed_face_idx][i].second.x(), x[fixed_face_idx][i].second.y());
-        //     }
-        // }
+        for (int i = 0; i < 3; i++) {
+            if (x[fixed_face_idx][i].first == fixed1) {
+                b.row(fixed1) = Eigen::Vector2f(
+                    x[fixed_face_idx][i].second.x(), x[fixed_face_idx][i].second.y());
+            }
+            if (x[fixed_face_idx][i].first == fixed2) {
+                b.row(fixed2) = Eigen::Vector2f(
+                    x[fixed_face_idx][i].second.x(), x[fixed_face_idx][i].second.y());
+            }
+        }
         // Solve the linear system.
         Eigen::MatrixXf u_new = solver.solve(b);
         if (solver.info() != Eigen::Success) {
