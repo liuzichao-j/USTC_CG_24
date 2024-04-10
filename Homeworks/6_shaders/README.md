@@ -20,15 +20,16 @@
 
 ## 目的
 
-- 熟悉OpenGL图形API以及GLSL Shader语言
-- 了解多Pass绘制方法
+- 熟悉 OpenGL 图形 API 以及 GLSL Shader 语言
+- 了解多 Pass 绘制方法
 - 了解实时渲染中常用的屏幕空间技巧
 
 
 ## 提供的材料
 
-- 基础的光栅化Pass
+- 基础的光栅化 Pass
 - 测试场景
+
 依照上述要求和方法，根据说明文档`(1) documents`和作业框架`(2) Framework3D`的内容进行练习。
 
 ### (1) 说明文档 `documents` [->](documents/) 

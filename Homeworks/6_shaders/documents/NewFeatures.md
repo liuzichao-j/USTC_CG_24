@@ -3,12 +3,12 @@
 ## Renderer Selection
 ![alt text](image.png)
 
-可对Renderer进行切换。本次作业我们使用中间的渲染器，可由后文所述的节点图进行控制。先前作业我们使用了第一个Plugin，下一次的路径追踪我们会修改最下方的渲染器。
+可对 Renderer 进行切换。本次作业我们使用中间的渲染器，可由后文所述的节点图进行控制。先前作业我们使用了第一个 Plugin，下一次的路径追踪我们会修改最下方的渲染器。
 
 ## Composition Graph
 
 ![alt text](image-1.png)
-可直接导入一整个USD文件，并加入了基础的灯光控制。
+可直接导入一整个 USD 文件，并加入了基础的灯光控制。
 
 ## Render Graph
 

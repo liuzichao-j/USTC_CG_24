@@ -33,7 +33,7 @@ static void node_exec(ExeParams params)
 
     TextureDesc texture_desc;
     texture_desc.array_size = lights.size();
-    //texture_desc.array_size = 1;
+    // texture_desc.array_size = 1;
     texture_desc.size = GfVec2i(resolution);
     texture_desc.format = HdFormatUNorm8Vec4;
     auto shadow_map_texture = resource_allocator.create(texture_desc);
@@ -44,23 +44,26 @@ static void node_exec(ExeParams params)
     shader_desc.set_vertex_path(
         std::filesystem::path(RENDER_NODES_FILES_DIR) /
         std::filesystem::path("shaders/shadow_mapping.vs"));
-
+    // Fixed vertex shader path.
     shader_desc.set_fragment_path(
         std::filesystem::path(RENDER_NODES_FILES_DIR) / std::filesystem::path(shaderPath));
     auto shader_handle = resource_allocator.create(shader_desc);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
+    // After this, not draw the pixel behind.
 
     std::vector<TextureHandle> depth_textures;
     GLuint framebuffer;
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    // After this, every draw call will draw to the framebuffer.
 
     glViewport(0, 0, resolution, resolution);
 
     for (int light_id = 0; light_id < lights.size(); ++light_id) {
         shader_handle->shader.use();
+        // For each light, use vertex shader to calculate in GPU.
 
         if (!lights[light_id]->GetId().IsEmpty()) {
             GlfSimpleLight light_params =
@@ -70,22 +73,28 @@ static void node_exec(ExeParams params)
                                        light_params.GetPosition()[2] };
             auto light_view_mat =
                 GfMatrix4f().SetLookAt(light_position, GfVec3f(0, 0, 0), GfVec3f(0, 0, 1));
+            // Set the camera on the light source. Set the up direction to z-axis.
 
-            // HW6: The matrices for lights information is here! Current value is set that "it just works". However, you should try to modify the values to see how it affects the performance of the shadow maps.
+            // HW6: The matrices for lights information is here! Current value is set that "it just
+            // works". However, you should try to modify the values to see how it affects the
+            // performance of the shadow maps.
             GfFrustum frustum;
             frustum.SetPerspective(120.f, 1.0, 1, 25.f);
+            // Field of view is 120 degrees. Aspect ratio is 1. Near plane is 1. Far plane is 25.
             auto light_projection_mat = frustum.ComputeProjectionMatrix();
             shader_handle->shader.setMat4("light_view", light_view_mat);
             shader_handle->shader.setMat4("light_projection", GfMatrix4f(light_projection_mat));
+            // Give the shader the light view and projection matrix.
 
-             glFramebufferTextureLayer(
-                 GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadow_map_texture->texture_id, 0,
-                 light_id);
+            glFramebufferTextureLayer(
+                GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadow_map_texture->texture_id, 0, light_id);
+            // Add the texture with maximum resolution on layer light_id to the framebuffer.
 
             texture_desc.format = HdFormatFloat32UInt8;
             texture_desc.array_size = 1;
             auto depth_texture_for_opengl = resource_allocator.create(texture_desc);
             depth_textures.push_back(depth_texture_for_opengl);
+            // Create a depth texture. 
 
             glFramebufferTexture2D(
                 GL_FRAMEBUFFER,
@@ -93,10 +102,13 @@ static void node_exec(ExeParams params)
                 GL_TEXTURE_2D,
                 depth_texture_for_opengl->texture_id,
                 0);
+            // Add the depth texture with maximum resolution to the framebuffer.
 
             glClearColor(0.f, 0.f, 0.f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+            // Clear the color buffer, depth buffer and stencil buffer.
 
+            // Draw the scene from the light's point of view.
             for (int mesh_id = 0; mesh_id < meshes.size(); ++mesh_id) {
                 auto mesh = meshes[mesh_id];
 
@@ -110,6 +122,7 @@ static void node_exec(ExeParams params)
                     static_cast<unsigned int>(mesh->triangulatedIndices.size() * 3),
                     GL_UNSIGNED_INT,
                     0);
+                // Draw the triangles. 
                 glBindVertexArray(0);
             }
         }

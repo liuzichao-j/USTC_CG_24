@@ -3,7 +3,7 @@
 // Define a uniform struct for lights
 struct Light {
     // The matrices are used for shadow mapping. You need to fill it according to how we are filling it when building the normal maps (node_render_shadow_mapping.cpp). 
-    // Now, they are filled with identity matrix. You need to modify C++ code innode_render_deferred_lighting.cpp.
+    // Now, they are filled with identity matrix. You need to modify C++ code in node_render_deferred_lighting.cpp.
     // Position and color are filled.
     mat4 light_projection;
     mat4 light_view;

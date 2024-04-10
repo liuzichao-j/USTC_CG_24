@@ -1,11 +1,13 @@
 #version 430
 
+// Fragment shader
 layout(location = 0) out vec3 position;
 layout(location = 1) out float depth;
 layout(location = 2) out vec2 texcoords;
 layout(location = 3) out vec3 diffuseColor;
 layout(location = 4) out vec2 metallicRoughness;
 layout(location = 5) out vec3 normal;
+// Data layout: (x, y, z, depth, u, v, r, g, b, metallic, roughness, nx, ny, nz) for each fragment
 
 in vec3 vertexPosition;
 in vec3 vertexNormal;
