@@ -85,6 +85,7 @@ static void node_exec(ExeParams params)
                 light_view_mat =
                     GfMatrix4f().SetLookAt(light_position, GfVec3f(0, 0, 0), GfVec3f(0, 0, 1));
                 frustum.SetPerspective(120.f, 1.0, 1, 25.f);
+                // Field of view: 120 degrees. Aspect ratio: 1.0. Near plane: 1. Far plane: 25.
                 light_projection_mat = GfMatrix4f(frustum.ComputeProjectionMatrix());
             }
             // else (lights[light_id]->GetLightType() == HdPrimTypeTokens->distantLight). See

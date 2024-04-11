@@ -34,20 +34,22 @@ layout(location = 0) out vec4 Color;
 
 void main() {
 vec2 uv = gl_FragCoord.xy / iResolution;
+// Place in screen space
 
-vec3 pos = texture2D(position,uv).xyz;
-vec3 normal = texture2D(normalMapSampler,uv).xyz;
+vec3 pos = texture2D(position, uv).xyz;
+vec3 normal = texture2D(normalMapSampler, uv).xyz;
+// After normal mapping. 
 
-vec4 metalnessRoughness = texture2D(metallicRoughnessSampler,uv);
+vec4 metalnessRoughness = texture2D(metallicRoughnessSampler, uv);
 float metal = metalnessRoughness.x;
 float roughness = metalnessRoughness.y;
 
-for(int i = 0; i < light_count; i ++) {
+for(int i = 0; i < light_count; i++) {
 
 float shadow_map_value = texture(shadow_maps, vec3(uv, lights[i].shadow_map_id)).x;
 
 // Visualization of shadow map
-Color += vec4(shadow_map_value, 0, 0, 1);
+// Color += vec4(shadow_map_value, 0, 0, 1);
 
 // HW6_TODO: first comment the line above ("Color +=..."). That's for quick Visualization.
 // You should first do the Blinn Phong shading here. You can use roughness to modify alpha. Or you can pass in an alpha value through the uniform above.

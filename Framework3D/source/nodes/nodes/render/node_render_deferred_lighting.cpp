@@ -7,6 +7,7 @@
 #include "Nodes/socket_types/basic_socket_types.hpp"
 #include "camera.h"
 #include "light.h"
+#include "pxr/base/gf/frustum.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "render_node_base.h"
@@ -81,43 +82,53 @@ static void node_exec(ExeParams params)
     shader_desc.set_vertex_path(
         std::filesystem::path(RENDER_NODES_FILES_DIR) /
         std::filesystem::path("shaders/fullscreen.vs"));
-
+    // Fixed vertex shader path.
     shader_desc.set_fragment_path(
         std::filesystem::path(RENDER_NODES_FILES_DIR) / std::filesystem::path(shaderPath));
     auto shader = resource_allocator.create(shader_desc);
+
     GLuint framebuffer;
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     glFramebufferTexture2D(
         GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_texture->texture_id, 0);
+    // Add color texture to the framebuffer.
 
     glClearColor(0.f, 0.f, 0.f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     shader->shader.use();
+    // For each light, use vertex shader to calculate in GPU.
     shader->shader.setVec2("iResolution", size);
+    // Give the shader the resolution. The resolution is the size of the texture.
 
     shader->shader.setInt("diffuseColorSampler", 0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, diffuseColor_texture->texture_id);
+    // Texture unit 0: diffuse color texture.
 
     shader->shader.setInt("normalMapSampler", 1);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, normal_texture->texture_id);
+    // Texture unit 1: normal map texture.
 
     shader->shader.setInt("metallicRoughnessSampler", 2);
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, metallic_roughness->texture_id);
+    // Texture unit 2: metallic roughness texture.
 
     shader->shader.setInt("shadow_maps", 3);
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D_ARRAY, shadow_maps->texture_id);
+    // Texture unit 3: shadow maps.
 
     shader->shader.setInt("position", 4);
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, position_texture->texture_id);
+    // Texture unit 4: position texture.
 
     GfVec3f camPos = GfMatrix4f(free_camera->GetTransform()).ExtractTranslation();
     shader->shader.setVec3("camPos", camPos);
+    // Give the shader the camera position.
 
     GLuint lightBuffer;
     glGenBuffers(1, &lightBuffer);
@@ -134,8 +145,24 @@ static void node_exec(ExeParams params)
             pxr::GfVec3f position3(position4[0], position4[1], position4[2]);
 
             auto radius = lights[i]->Get(HdLightTokens->radius).Get<float>();
+
+            GfMatrix4f light_view_mat;
+            GfMatrix4f light_projection_mat;
+
+            if (lights[i]->GetLightType() == HdPrimTypeTokens->sphereLight) {
+                GfFrustum frustum;
+                GfVec3f light_position = { light_params.GetPosition()[0],
+                                           light_params.GetPosition()[1],
+                                           light_params.GetPosition()[2] };
+
+                light_view_mat =
+                    GfMatrix4f().SetLookAt(light_position, GfVec3f(0, 0, 0), GfVec3f(0, 0, 1));
+                frustum.SetPerspective(120.f, 1.0, 1, 25.f);
+                // Field of view: 120 degrees. Aspect ratio: 1.0. Near plane: 1. Far plane: 25.
+                light_projection_mat = GfMatrix4f(frustum.ComputeProjectionMatrix());
+            }
             
-            light_vector.emplace_back(GfMatrix4f(), GfMatrix4f(), position3, 0.f, diffuse3, i);
+            light_vector.emplace_back(light_view_mat, light_projection_mat, position3, 0.f, diffuse3, i);
 
             // You can add directional light here, and also the corresponding shadow map calculation
             // part.
@@ -149,11 +176,14 @@ static void node_exec(ExeParams params)
         light_vector.size() * sizeof(LightInfo),
         light_vector.data(),
         GL_STATIC_DRAW);
+    // Give light_vector to buffer. 
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lightBuffer);
+    // Bind to a specific binding point.
 
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    // Just draw two triangles, for the full screen VAO. 
 
     DestroyFullScreenVAO(VAO, VBO);
 
