@@ -10,10 +10,10 @@ GPGPU 被广泛使用在各种任务中，是目前火热的人工智能领域�
 
 我们需要完成：
 
-### Blinn Phong 着色模型
-1. 首先连接节点 Rasterize 的输出，观察不同连接的结果。
-2. 在 Lighting 节点中，按注释完成 blinn_phong.fs. 此 shader 需要在节点图中添加 Deferred shading 节点来进行调用。
-3. 在 rasterize.fs 中，读取法线贴图并且完成法线贴图映射。（本步骤可以后执行）
+### Blinn Phong着色模型
+1. 首先连接节点Rasterize的输出，观察不同连接的结果。
+2. 在Lighting节点中，按注释完成 blinn_phong.fs. 此shader需要在节点图中添加Deferred shading节点来进行调用。
+3. 在rasterize.fs中，读取法线贴图并且完成法线贴图映射。（本步骤可以后执行）[法线贴图资料](https://learnopengl-cn.github.io/05%20Advanced%20Lighting/04%20Normal%20Mapping/)。
 
 ### Shadow Mapping
 1. 创建 Shadow Mapping 节点

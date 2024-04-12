@@ -35,27 +35,34 @@ void main() {
     normal = normalize(vertexNormal);
 
     // HW6_TODO: Apply normal map here. Use normal textures to modify vertex normals.
-    
+
     // Calculate tangent and bitangent
     vec3 edge1 = dFdx(vertexPosition);
     // Get partial position / partial x
     vec3 edge2 = dFdy(vertexPosition);
     // Get partial position / partial y
-    vec2 deltaUV1 = dFdx(texcoords);
+    vec2 deltaUV1 = dFdx(vTexcoord);
     // Get partial uv / partial x
-    vec2 deltaUV2 = dFdy(texcoords);
+    vec2 deltaUV2 = dFdy(vTexcoord);
     // Get partial uv / partial y
 
-    float f = 1.0 / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+    // float f = 1.0 / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
     // 1 / |Jacobian| means how to make area smaller. 
 
-    vec3 tangent = f * (deltaUV2.y * edge1 - deltaUV1.y * edge2);
+    vec3 tangent = edge1 * deltaUV2.y - edge2 * deltaUV1.y;
     // tangent vector should be partial position / partial u. Also J(position, v) / J(u, v). 
-    vec3 bitangent = f * (-deltaUV2.x * edge1 + deltaUV1.x * edge2);
+    // vec3 bitangent = f * (-deltaUV2.x * edge1 + deltaUV1.x * edge2);
     // bitangent vector should be partial position / partial v. Also J(position, u) / J(v, u). 
+    
+    // Robust tangent and bitangent evaluation
+    if(length(tangent) < 1E-7) {
+        vec3 bitangent = -edge1 * deltaUV2.x + edge2 * deltaUV1.x;
+        tangent = normalize(cross(bitangent, normal));
+    }
 
     tangent = normalize(tangent - dot(tangent, normal) * normal);
-    bitangent = normalize(bitangent - dot(bitangent, normal) * normal);
+    // bitangent = normalize(bitangent - dot(bitangent, normal) * normal);
+    vec3 bitangent = normalize(cross(tangent,normal));
 
     mat3 TBN = mat3(tangent, bitangent, normal);
     normal = normalize(TBN * normalmap_value);
