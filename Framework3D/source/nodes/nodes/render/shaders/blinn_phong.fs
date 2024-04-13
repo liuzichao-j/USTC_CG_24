@@ -37,6 +37,7 @@ vec2 uv = gl_FragCoord.xy / iResolution;
 // Place in screen space
 
 vec3 pos = texture2D(position, uv).xyz;
+// Place in world space
 vec3 normal = texture2D(normalMapSampler, uv).xyz;
 // After normal mapping. 
 
@@ -44,9 +45,16 @@ vec4 metalnessRoughness = texture2D(metallicRoughnessSampler, uv);
 float metal = metalnessRoughness.x;
 float roughness = metalnessRoughness.y;
 
+Color = vec4(0.0, 0.0, 0.0, 1.0);
+// Color += vec4(uv, 0, 1.0);
+
+bool enable_shadow = true;
+bool enable_pcss = false;
+
 for(int i = 0; i < light_count; i++) {
 
-float shadow_map_value = texture(shadow_maps, vec3(uv, lights[i].shadow_map_id)).x;
+// float shadow_map_value = texture(shadow_maps, vec3(uv, lights[i].shadow_map_id)).x;
+// Get the shadow map value of the light i in place uv (screen space, also the view from light i). 
 
 // Visualization of shadow map
 // Color += vec4(shadow_map_value, 0, 0, 1);
@@ -54,10 +62,89 @@ float shadow_map_value = texture(shadow_maps, vec3(uv, lights[i].shadow_map_id))
 // HW6_TODO: first comment the line above ("Color +=..."). That's for quick Visualization.
 // You should first do the Blinn Phong shading here. You can use roughness to modify alpha. Or you can pass in an alpha value through the uniform above.
 
-// After finishing Blinn Phong shading, you can do shadow mapping with the help of the provided shadow_map_value. You will need to refer to the node, node_render_shadow_mapping.cpp, for the light matrices definition. Then you need to fill the mat4 light_projection; mat4 light_view; with similar approach that we fill position and color.
-// For shadow mapping, as is discussed in the course, you should compare the value "position depth from the light's view" against the "blocking object's depth.", then you can decide whether it's shadowed.
+vec3 vlight = normalize(lights[i].position - pos);
+vec3 vnormal = normalize(normal);
+vec3 vview = normalize(camPos - pos);
+// vec3 vreflect = reflect(-vlight, vnormal);
+vec3 vreflect = normalize(-vlight + 2.0 * dot(vlight, vnormal) * vnormal);
+float k_diffuse = max(1 - metal * 0.8, 0.0);
+float diffuse = dot(vlight, vnormal);
+if (diffuse < 0.0) {
+    diffuse = 0;
+    // vnormal = -vnormal;
+    // diffuse = -diffuse;
+}
+float k_specular = max(metal * 0.8, 0.0);
+float specular = pow(max(dot(vview, vreflect), 0.0), (1 - roughness));
+// Color += vec4(specular, 0, 0, 1.0);
+// if (diffuse == 0.0) {
+//     specular = 0.0;
+// }
+// else {
+//     specular = pow(specular, (1 - roughness) * 10.0);
+// }
+float k_ambient = 0.1;
+vec4 diffuseColor = texture(diffuseColorSampler, uv);
 
-// PCSS is also applied here.
+Color += vec4(k_ambient * lights[i].color, 1.0) * diffuseColor;
+
+if (enable_shadow == false) {
+    // Calculate the color in screen space uv for light i on known world space position pos.
+    Color += vec4((k_ambient + k_diffuse * diffuse + k_specular * specular) * lights[i].color, 1.0) * diffuseColor;
+}
+else {
+    // After finishing Blinn Phong shading, you can do shadow mapping with the help of the provided shadow_map_value. You will need to refer to the node, node_render_shadow_mapping.cpp, for the light matrices definition. Then you need to fill the mat4 light_projection; mat4 light_view; with similar approach that we fill position and color.
+    // For shadow mapping, as is discussed in the course, you should compare the value "position depth from the light's view" against the "blocking object's depth.", then you can decide whether it's shadowed.
+
+    // Calculate the position in light clip space
+    vec4 clipPos = lights[i].light_projection * lights[i].light_view * vec4(pos, 1.0);
+    // Color += lights[i].light_projection * lights[i].light_view * vec4(pos, 1.0);
+    // Color += vec4(clipPos.xy / clipPos.w, 0, 1.0);
+    
+    // Depth value in light clip space
+    float depth = clipPos.z / clipPos.w;
+    // Color += vec4(depth, 0, 0, 1.0);
+    
+    // Calculate the position in shader map space
+    vec2 shadow_uv = clipPos.xy / clipPos.w * 0.5 + 0.5;
+    // Color += vec4(shadow_uv, 0, 1);
+    // Color += vec4(texture(shadow_maps, vec3(uv, lights[i].shadow_map_id)).x, 0, 0, 1.0);
+    
+    if (shadow_uv.x < 0.0 || shadow_uv.x > 1.0 || shadow_uv.y < 0.0 || shadow_uv.y > 1.0) {
+        // Cannot see from the light. Don't consider shadow.
+        Color += vec4((k_diffuse * diffuse + k_specular * specular) * lights[i].color, 1.0) * diffuseColor;
+    }
+    else {
+        if (enable_pcss == false) {
+            // Shadow map value
+            float shadow_map_value = texture(shadow_maps, vec3(shadow_uv, lights[i].shadow_map_id)).x;
+            // Color += vec4(shadow_map_value, 0, 0, 1);
+            // Decide whether it's shadowed. shadow_map_value is the depth value in the light clip space uv. 
+            if (depth < 1.003 * shadow_map_value) {
+                // Not shadowed
+                Color += vec4((k_diffuse * diffuse + k_specular * specular) * lights[i].color, 1.0) * diffuseColor;
+            }
+        }
+        else {
+            // PCSS
+            float shadow = 0.0;
+            int shadow_samples = 4;
+            float shadow_radius = light[i].radius * depth / (1 + depth);
+            float shadow_step = 2 * shadow_radius / shadow_samples;
+            for (float x = -shadow_radius; x <= shadow_radius; x += shadow_step) {
+                for (float y = -shadow_radius; y <= shadow_radius; y += shadow_step) {
+                    float shadow_map_value = texture(shadow_maps, vec3(shadow_uv + vec2(x, y), lights[i].shadow_map_id)).x;
+                    if (depth < 1.003 * shadow_map_value) {
+                        shadow += 1.0;
+                    }
+                }
+            }
+            shadow /= (shadow_samples * shadow_samples);
+            Color += vec4((k_diffuse * diffuse + k_specular * specular) * lights[i].color * shadow, 1.0) * diffuseColor;
+        }
+    }
+}
+
 }
 
 }

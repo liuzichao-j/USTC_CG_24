@@ -97,6 +97,7 @@ static void node_exec(ExeParams params)
 
             glFramebufferTextureLayer(
                 GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadow_map_texture->texture_id, 0, light_id);
+            // Add the shadow map texture to the framebuffer in attachment 0 on layer light_id.
 
             texture_desc.format = HdFormatFloat32UInt8;
             texture_desc.array_size = 1;

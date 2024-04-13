@@ -24,8 +24,11 @@ uniform sampler2D metallicRoughnessSampler;
 
 void main() {
     position = vertexPosition;
+    // Position in world space
     vec4 clipPos = projection * view * (vec4(position, 1.0));
     depth = clipPos.z / clipPos.w;
+    // Depth value in camera clip space
+    // position = vec3(clipPos.xy / clipPos.w * 0.5 + 0.5, 0);
     texcoords = vTexcoord;
 
     diffuseColor = texture2D(diffuseColorSampler, vTexcoord).xyz;
@@ -65,6 +68,7 @@ void main() {
     vec3 bitangent = normalize(cross(tangent,normal));
 
     mat3 TBN = mat3(tangent, bitangent, normal);
+    normalmap_value = 2.0 * normalmap_value - 1.0;
     normal = normalize(TBN * normalmap_value);
     // Normal mapping
 }

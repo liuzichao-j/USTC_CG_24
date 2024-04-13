@@ -162,7 +162,7 @@ static void node_exec(ExeParams params)
                 light_projection_mat = GfMatrix4f(frustum.ComputeProjectionMatrix());
             }
             
-            light_vector.emplace_back(light_view_mat, light_projection_mat, position3, 0.f, diffuse3, i);
+            light_vector.emplace_back(light_projection_mat, light_view_mat, position3, 0.f, diffuse3, i);
 
             // You can add directional light here, and also the corresponding shadow map calculation
             // part.

@@ -16,8 +16,11 @@ uniform mat4 projection;
 
 void main() {
 gl_Position = projection * view * model * vec4(aPos, 1.0);
+// Position in camera clip space. 
+// This vertex / fragment is to be shown on the screen position gl_Position.xy
 vec4 vPosition = model * vec4(aPos, 1.0);
 vertexPosition = vPosition.xyz / vPosition.w;
+// Position in world space. Used to get vertex / fragment. 
 vertexNormal = (inverse(transpose(mat3(model))) * aNormal);
 vTexcoord = aTexcoord.data[gl_VertexID];
 vTexcoord.y = 1.0 - vTexcoord.y;

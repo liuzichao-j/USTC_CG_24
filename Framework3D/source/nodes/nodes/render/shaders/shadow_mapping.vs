@@ -9,11 +9,11 @@ out vec3 vertexPosition;
 void main() {
     gl_Position = light_projection * light_view * model * vec4(aPos, 1.0);
     // First transform to the world space
-    // Then transform to the light view space
-    // Then transform to the light projection space
-    // gl_Position stores the position of the vertex in the light space
+    // Then transform to the light view frustum space
+    // Then transform to the light clip space
+    // gl_Position stores the position of the vertex in the light clip space
     vec4 vPosition = model * vec4(aPos, 1.0);
     // Transform to the world space
     vertexPosition = vPosition.xyz / vPosition.w;
-    // Calculate the position of the vertex in the light space. 
+    // Calculate the position of the vertex in the world space
 }
