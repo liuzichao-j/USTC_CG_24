@@ -49,7 +49,7 @@ Color = vec4(0.0, 0.0, 0.0, 1.0);
 // Color += vec4(uv, 0, 1.0);
 
 bool enable_shadow = true;
-bool enable_pcss = false;
+bool enable_pcss = true;
 
 for(int i = 0; i < light_count; i++) {
 
@@ -86,11 +86,11 @@ float specular = pow(max(dot(vview, vreflect), 0.0), (1 - roughness));
 float k_ambient = 0.1;
 vec4 diffuseColor = texture(diffuseColorSampler, uv);
 
-Color += vec4(k_ambient * lights[i].color, 1.0) * diffuseColor;
+// Color += vec4(k_ambient * lights[i].color, 1.0) * diffuseColor;
 
 if (enable_shadow == false) {
     // Calculate the color in screen space uv for light i on known world space position pos.
-    Color += vec4((k_ambient + k_diffuse * diffuse + k_specular * specular) * lights[i].color, 1.0) * diffuseColor;
+    Color += vec4((k_diffuse * diffuse + k_specular * specular) * lights[i].color, 1.0) * diffuseColor;
 }
 else {
     // After finishing Blinn Phong shading, you can do shadow mapping with the help of the provided shadow_map_value. You will need to refer to the node, node_render_shadow_mapping.cpp, for the light matrices definition. Then you need to fill the mat4 light_projection; mat4 light_view; with similar approach that we fill position and color.
@@ -120,7 +120,7 @@ else {
             float shadow_map_value = texture(shadow_maps, vec3(shadow_uv, lights[i].shadow_map_id)).x;
             // Color += vec4(shadow_map_value, 0, 0, 1);
             // Decide whether it's shadowed. shadow_map_value is the depth value in the light clip space uv. 
-            if (depth < 1.003 * shadow_map_value) {
+            if (depth < 1.003 * shadow_map_value || shadow_map_value < 0.1) {
                 // Not shadowed
                 Color += vec4((k_diffuse * diffuse + k_specular * specular) * lights[i].color, 1.0) * diffuseColor;
             }
@@ -128,18 +128,35 @@ else {
         else {
             // PCSS
             float shadow = 0.0;
-            int shadow_samples = 4;
-            float shadow_radius = light[i].radius * depth / (1 + depth);
+            int shadow_samples = 5;
+            float shadow_radius = lights[i].radius * depth / (1.0 + depth);
+            // Color += vec4(shadow_radius, 0, 0, 1.0);
             float shadow_step = 2 * shadow_radius / shadow_samples;
-            for (float x = -shadow_radius; x <= shadow_radius; x += shadow_step) {
-                for (float y = -shadow_radius; y <= shadow_radius; y += shadow_step) {
-                    float shadow_map_value = texture(shadow_maps, vec3(shadow_uv + vec2(x, y), lights[i].shadow_map_id)).x;
-                    if (depth < 1.003 * shadow_map_value) {
+            float shadow_map_value = 0.0;
+            for (int j = 0; j < shadow_samples; j++) {
+                for (int k = 0; k < shadow_samples; k++) {
+                    float x = -shadow_radius + shadow_step / 2.0 + j * shadow_step;
+                    float y = -shadow_radius + shadow_step / 2.0 + k * shadow_step;
+                    shadow_map_value = texture(shadow_maps, vec3(shadow_uv + vec2(x, y), lights[i].shadow_map_id)).x;
+                    // Color += vec4(shadow_map_value, 0, 0, 1.0) / (shadow_samples * shadow_samples);
+                    if (depth < 1.003 * shadow_map_value || shadow_map_value < 0.1) {
                         shadow += 1.0;
                     }
+                    // if(i == 1 && j == 0) {
+                    //     Color += vec4(shadow_uv, 0, 1.0);
+                    // }
                 }
             }
+            // for (float x = -shadow_radius + shadow_step / 2.0; x <= shadow_radius - shadow_step / 2.0; x += shadow_step) {
+            //     for (float y = -shadow_radius + shadow_step / 2.0; y <= shadow_radius - shadow_step / 2.0; y += shadow_step) {
+            //         float shadow_map_value = texture(shadow_maps, vec3(shadow_uv + vec2(x, y), lights[i].shadow_map_id)).x;
+            //         if (depth < 1.003 * shadow_map_value || shadow_map_value < 0.1) {
+            //             shadow += 1.0;
+            //         }
+            //     }
+            // }
             shadow /= (shadow_samples * shadow_samples);
+            // Color += vec4(shadow, 0, 0, 1.0);
             Color += vec4((k_diffuse * diffuse + k_specular * specular) * lights[i].color * shadow, 1.0) * diffuseColor;
         }
     }
