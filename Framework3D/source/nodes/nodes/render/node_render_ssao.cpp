@@ -17,6 +17,7 @@ static void node_declare(NodeDeclarationBuilder& b)
     b.add_input<decl::Texture>("Color");
     b.add_input<decl::Texture>("Position");
     b.add_input<decl::Texture>("Depth");
+    b.add_input<decl::Texture>("Normal");
 
     // HW6: For HBAO you might need normal texture.
 
@@ -27,6 +28,9 @@ static void node_declare(NodeDeclarationBuilder& b)
 static void node_exec(ExeParams params)
 {
     auto color = params.get_input<TextureHandle>("Color");
+    auto position = params.get_input<TextureHandle>("Position");
+    auto depth = params.get_input<TextureHandle>("Depth");
+    auto normal = params.get_input<TextureHandle>("Normal");
 
     auto size = color->desc.size;
 
@@ -61,14 +65,38 @@ static void node_exec(ExeParams params)
     shader->shader.setVec2("iResolution", size);
 
     // HW6: Bind the textures like other passes here.
+    shader->shader.setInt("colorSampler", 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, color->texture_id);
+    // Texture unit 0: color texture.
+
+    shader->shader.setInt("positionSampler", 1);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, position->texture_id);
+    // Texture unit 1: position texture.
+
+    shader->shader.setInt("depthSampler", 2);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, depth->texture_id);
+    // Texture unit 2: depth texture.
+
+    shader->shader.setInt("normalSampler", 3);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, normal->texture_id);
+    // Texture unit 3: normal texture.
 
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     DestroyFullScreenVAO(VAO, VBO);
     resource_allocator.destroy(shader);
-
+    glDeleteFramebuffers(1, &framebuffer);
     params.set_output("Color", color_texture);
+
+    auto shader_error = shader->shader.get_error();
+    if (!shader_error.empty()) {
+        throw std::runtime_error(shader_error);
+    }
 }
 
 static void node_register()

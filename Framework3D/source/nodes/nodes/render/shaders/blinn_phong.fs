@@ -35,6 +35,10 @@ layout(location = 0) out vec4 Color;
 void main() {
 vec2 uv = gl_FragCoord.xy / iResolution;
 // Place in screen space
+// if (uv.x > 0.55 && uv.x < 0.56 && uv.y > 0.23 && uv.y < 0.25) {
+//     Color = vec4(1.0, 0.0, 0.0, 1.0);
+//     return;
+// }
 
 vec3 pos = texture2D(position, uv).xyz;
 // Place in world space
@@ -85,8 +89,12 @@ float specular = pow(max(dot(vview, vreflect), 0.0), (1 - roughness));
 // }
 float k_ambient = 0.1;
 vec4 diffuseColor = texture(diffuseColorSampler, uv);
+// if (uv.x > 0.55 && uv.x < 0.56 && uv.y > 0.23 && uv.y < 0.25) {
+//     Color = vec4((k_diffuse * diffuse + k_specular * specular) * lights[i].color, 1.0) * diffuseColor;
+//     return;
+// }
 
-// Color += vec4(k_ambient * lights[i].color, 1.0) * diffuseColor;
+Color += vec4(k_ambient * lights[i].color, 1.0) * diffuseColor;
 
 if (enable_shadow == false) {
     // Calculate the color in screen space uv for light i on known world space position pos.
@@ -128,7 +136,7 @@ else {
         else {
             // PCSS
             float shadow = 0.0;
-            int shadow_samples = 5;
+            const int shadow_samples = 16;
             float shadow_radius = lights[i].radius * depth / (1.0 + depth);
             // Color += vec4(shadow_radius, 0, 0, 1.0);
             float shadow_step = 2 * shadow_radius / shadow_samples;
