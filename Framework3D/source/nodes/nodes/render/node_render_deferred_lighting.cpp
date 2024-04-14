@@ -29,6 +29,9 @@ static void node_declare(NodeDeclarationBuilder& b)
     b.add_input<decl::Texture>("Shadow Maps");
 
     b.add_input<decl::String>("Lighting Shader").default_val("shaders/blinn_phong.fs");
+
+    b.add_input<decl::Int>("Shadow Map").default_val(1).min(0).max(1);
+    b.add_input<decl::Int>("PCSS").default_val(1).min(0).max(1);
     b.add_output<decl::Texture>("Color");
 }
 
@@ -56,6 +59,9 @@ static void node_exec(ExeParams params)
     auto shadow_maps = params.get_input<TextureHandle>("Shadow Maps");
 
     auto cameras = params.get_input<CameraArray>("Camera");
+
+    auto enable_shadow = params.get_input<int>("Shadow Map");
+    auto enable_pcss = params.get_input<int>("PCSS");
 
     Hd_USTC_CG_Camera* free_camera;
 
@@ -100,6 +106,9 @@ static void node_exec(ExeParams params)
     // For each light, use vertex shader to calculate in GPU.
     shader->shader.setVec2("iResolution", size);
     // Give the shader the resolution. The resolution is the size of the texture.
+
+    shader->shader.setInt("enable_shadow", enable_shadow);
+    shader->shader.setInt("enable_pcss", enable_pcss);
 
     shader->shader.setInt("diffuseColorSampler", 0);
     glActiveTexture(GL_TEXTURE0);

@@ -30,6 +30,9 @@ uniform vec3 camPos;
 
 uniform int light_count;
 
+uniform int enable_shadow;
+uniform int enable_pcss;
+
 layout(location = 0) out vec4 Color;
 
 void main() {
@@ -52,9 +55,6 @@ float roughness = metalnessRoughness.y;
 Color = vec4(0.0, 0.0, 0.0, 1.0);
 // Color += vec4(uv, 0, 1.0);
 
-bool enable_shadow = true;
-bool enable_pcss = true;
-
 for(int i = 0; i < light_count; i++) {
 
 // float shadow_map_value = texture(shadow_maps, vec3(uv, lights[i].shadow_map_id)).x;
@@ -69,15 +69,15 @@ for(int i = 0; i < light_count; i++) {
 vec3 vlight = normalize(lights[i].position - pos);
 vec3 vnormal = normalize(normal);
 vec3 vview = normalize(camPos - pos);
-// vec3 vreflect = reflect(-vlight, vnormal);
-vec3 vreflect = normalize(-vlight + 2.0 * dot(vlight, vnormal) * vnormal);
+vec3 vreflect = reflect(-vlight, vnormal);
+// vec3 vreflect = normalize(-vlight + 2.0 * dot(vlight, vnormal) * vnormal);
 float k_diffuse = max(1 - metal * 0.8, 0.0);
-float diffuse = dot(vlight, vnormal);
-if (diffuse < 0.0) {
-    diffuse = 0;
-    // vnormal = -vnormal;
-    // diffuse = -diffuse;
-}
+float diffuse = max(dot(vlight, vnormal), 0.0);
+// if (diffuse < 0.0) {
+//     diffuse = 0;
+//     vnormal = -vnormal;
+//     diffuse = -diffuse;
+// }
 float k_specular = max(metal * 0.8, 0.0);
 float specular = pow(max(dot(vview, vreflect), 0.0), (1 - roughness));
 // Color += vec4(specular, 0, 0, 1.0);
@@ -96,7 +96,7 @@ vec4 diffuseColor = texture(diffuseColorSampler, uv);
 
 Color += vec4(k_ambient * lights[i].color, 1.0) * diffuseColor;
 
-if (enable_shadow == false) {
+if (enable_shadow == 0) {
     // Calculate the color in screen space uv for light i on known world space position pos.
     Color += vec4((k_diffuse * diffuse + k_specular * specular) * lights[i].color, 1.0) * diffuseColor;
 }
@@ -123,7 +123,7 @@ else {
         Color += vec4((k_diffuse * diffuse + k_specular * specular) * lights[i].color, 1.0) * diffuseColor;
     }
     else {
-        if (enable_pcss == false) {
+        if (enable_pcss == 0) {
             // Shadow map value
             float shadow_map_value = texture(shadow_maps, vec3(shadow_uv, lights[i].shadow_map_id)).x;
             // Color += vec4(shadow_map_value, 0, 0, 1);
