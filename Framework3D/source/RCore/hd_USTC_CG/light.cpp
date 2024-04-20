@@ -115,7 +115,6 @@ Color Hd_USTC_CG_Sphere_Light::Sample(
     // x, y, z direction. z = -distanceVec
     auto basis = constructONB(-distanceVec.GetNormalized());
 
-    auto distance = distanceVec.GetLength();
 
     // A sphere light is treated as all points on the surface spreads energy uniformly:
     float sample_pos_pdf;
@@ -134,18 +133,19 @@ Color Hd_USTC_CG_Sphere_Light::Sample(
 
     // Then we can decide the direction.
     dir = (sampledPosOnSurface - pos).GetNormalized();
+    auto distance = (sampledPosOnSurface - pos).GetLength();
 
     // and the pdf (with the measure of solid angle):
     float cosVal = GfDot(-dir, worldSampledDir.GetNormalized());
 
-    sample_light_pdf = sample_pos_pdf / radius / radius * cosVal * distance * distance;
+    sample_light_pdf = sample_pos_pdf / radius / radius / cosVal * distance * distance;
     // The pdf is the product of pdf of the position and the pdf of the direction.
 
     // Finally we calculate the radiance
     if (cosVal < 0) {
         return Color{ 0 };
     }
-    return irradiance * cosVal / M_PI;
+    return irradiance / M_PI;
     // irradiance means the color of the light (also the power).
 }
 
@@ -176,8 +176,9 @@ void Hd_USTC_CG_Sphere_Light::Sync(
     radius = sceneDelegate->GetLightParamValue(id, HdLightTokens->radius).Get<float>();
 
     auto diffuse = sceneDelegate->GetLightParamValue(id, HdLightTokens->diffuse).Get<float>();
-    power = sceneDelegate->GetLightParamValue(id, HdLightTokens->color).Get<GfVec3f>() * diffuse;
-    // power = color * diffuse
+    auto intensity =
+        sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity).GetWithDefault<float>();
+    power = sceneDelegate->GetLightParamValue(id, HdLightTokens->color).Get<GfVec3f>() * diffuse * intensity;
 
     auto transform = Get(HdTokens->transform).GetWithDefault<GfMatrix4d>();
 
@@ -208,9 +209,8 @@ Color Hd_USTC_CG_Dome_Light::Sample(
 
 Color Hd_USTC_CG_Dome_Light::Intersect(const GfRay& ray, float& depth)
 {
-    depth = std::numeric_limits<float>::max() / 100.f;  // max is smaller than infinity, lol
-
-    return Le(GfVec3f(ray.GetDirection()));
+    depth = 10000000.f;
+    return Le(GfVec3f(ray.GetDirection()).GetNormalized());
     // Color of given texture on ray direction.
 }
 
@@ -317,7 +317,7 @@ Color Hd_USTC_CG_Distant_Light::Sample(
     // - means to see from the object's view. 
 
     dir = basis * sampled_dir;
-    sampled_light_pos = pos + dir * std::numeric_limits<float>::max() / 100.f;
+    sampled_light_pos = pos + dir * 10000000.f;
     // To infinity distance.
 
     sample_light_pdf = 1.0f / sin(theta) / (2.0f * M_PI * angle);
@@ -327,7 +327,7 @@ Color Hd_USTC_CG_Distant_Light::Sample(
 
 Color Hd_USTC_CG_Distant_Light::Intersect(const GfRay& ray, float& depth)
 {
-    depth = std::numeric_limits<float>::max() / 100.f;
+    depth = 10000000.f;
 
     if (GfDot(ray.GetDirection().GetNormalized(), -direction) > cos(angle)) {
         return radiance;
