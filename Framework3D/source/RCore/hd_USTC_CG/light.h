@@ -141,6 +141,8 @@ class Hd_USTC_CG_Rect_Light : public Hd_USTC_CG_Light {
     float width;
     float height;
     GfVec3f power;
+    float area;
+    GfVec3f irradiance;
 };
 
 USTC_CG_NAMESPACE_CLOSE_SCOPE

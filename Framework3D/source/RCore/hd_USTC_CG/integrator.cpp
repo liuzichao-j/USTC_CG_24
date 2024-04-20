@@ -236,19 +236,23 @@ Color Integrator::EstimateDirectLight(
     SurfaceInteraction& si,
     const std::function<float()>& uniform_float)
 {
-
+    // Estimate direct light
     // Sample the lights.
     GfVec3f wi;
     float sample_light_pdf;
     GfVec3f sampled_light_pos;
+    // Uniformly sample a random light.
     auto sample_light_luminance =
         SampleLights(si.position, wi, sampled_light_pos, sample_light_pdf, uniform_float);
+    // Get BRDF value on input direction wi. 
     auto brdfVal = si.Eval(wi);
     GfVec3f contribution_by_sample_lights{ 0 };
 
     if (this->VisibilityTest(si.position + 0.0001f * si.geometricNormal, sampled_light_pos)) {
+        // Small offset to avoid self-intersection.
         contribution_by_sample_lights = GfCompMult(sample_light_luminance, brdfVal) *
                                         abs(GfDot(si.shadingNormal, wi)) / sample_light_pdf;
+        // f = I * BRDF * cos. \int f(x) dx = \int f(x) / p(x) * p(x) dx = E(f(x) / p(x))
     }
 
     // HW7_TODO: Sample BRDF (optional)

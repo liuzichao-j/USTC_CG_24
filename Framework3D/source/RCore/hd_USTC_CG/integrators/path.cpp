@@ -1,4 +1,5 @@
 #include "path.h"
+#include "utils/sampling.hpp"
 
 #include <random>
 
@@ -22,18 +23,24 @@ GfVec3f PathIntegrator::EstimateOutGoingRadiance(
     const std::function<float()>& uniform_float,
     int recursion_depth)
 {
-    if (recursion_depth >= 50) {
+    if (recursion_depth >= 100) {
         return {};
     }
 
     SurfaceInteraction si;
     if (!Intersect(ray, si)) {
+        // ray intersects nothing
         if (recursion_depth == 0) {
             return IntersectDomeLight(ray);
+            // use dome light for infinite far. This will automatically decide if there is a dome
+            // light.
+            // Only use for the first bounce. It is for easy running.
         }
 
         return GfVec3f{ 0, 0, 0 };
     }
+
+    // ray intersects something, stored in si
 
     // This can be customized : Do we want to see the lights? (Other than dome lights?)
     if (recursion_depth == 0) {
@@ -50,6 +57,23 @@ GfVec3f PathIntegrator::EstimateOutGoingRadiance(
 
     // HW7_TODO: Estimate global lighting here.
     GfVec3f globalLight;
+    float russian_roulette = 1.0;
+    if (uniform_float() < russian_roulette) {
+        // Introduce Russian Roulette by randomly terminate the path
+
+        float sample_pos_pdf;
+        GfVec3f wi = CosineWeightedDirection(GfVec2f(uniform_float(), uniform_float()), sample_pos_pdf);
+        // randomly choose input direction with cosine weight and sample_pos_pdf
+        GfVec3f wo = si.WorldToTangent(si.wo);
+        auto brdfVal = si.Eval(wi);
+        // evaluate the material
+        auto L = EstimateOutGoingRadiance(GfRay(si.position, si.TangentToWorld(wi)), uniform_float, recursion_depth + 1);
+        // recursively estimate the outgoing radiance
+        globalLight = GfCompMult(brdfVal, L) * GfDot(si.shadingNormal, wi) / sample_pos_pdf / russian_roulette;
+    }
+    else {
+        globalLight = GfVec3f{ 0, 0, 0 };
+    }
 
     color = directLight + globalLight;
 
