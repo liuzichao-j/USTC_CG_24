@@ -63,23 +63,28 @@ GfVec3f PathIntegrator::EstimateOutGoingRadiance(
     // HW7_TODO: Estimate global lighting here.
     GfVec3f globalLight = GfVec3f(0.f);
     const float russian_roulette = 1.0;
-    if (uniform_float() < russian_roulette) {
+    if (uniform_float() > russian_roulette) {
         // Introduce Russian Roulette by randomly terminate the path
-        // float distance = (si.position - ray.GetStartPoint()).GetLength();
-        // float distance = 1.0f;
-        float sample_pos_pdf;
-        GfVec3f wi =
-            UniformSampleHemiSphere(GfVec2f(uniform_float(), uniform_float()), sample_pos_pdf);
-        // randomly choose input direction with cosine weight and sample_pos_pdf
-        GfVec3f wo = si.WorldToTangent(si.wo);
-        auto brdfVal = si.Eval(wi);
-        // evaluate the material
-        auto L = EstimateOutGoingRadiance(
-            GfRay(si.position, si.TangentToWorld(wi)), uniform_float, recursion_depth + 1);
-        // recursively estimate the outgoing radiance
-        globalLight = GfCompMult(brdfVal, L) * GfDot(si.shadingNormal, wi) / sample_pos_pdf /
-                      russian_roulette;
+        return directLight;
     }
+    // float distance = (si.position - ray.GetStartPoint()).GetLength();
+    // float distance = 1.0f;
+    float sample_pos_pdf;
+    // GfVec3f wi = UniformSampleHemiSphere(GfVec2f(uniform_float(), uniform_float()),
+    // sample_pos_pdf); 
+    // randomly choose input direction with cosine weight and sample_pos_pdf
+
+    GfVec3f wi;
+    GfVec3f wo = si.WorldToTangent(si.wo);
+    wi = UniformSampleHemiSphere(GfVec2f(uniform_float(), uniform_float()), sample_pos_pdf);
+    auto brdfVal = si.Eval(wi);
+    // Sample BRDF
+    // auto brdfVal = si.material->Sample(wo, wi, sample_pos_pdf, si.texcoord, uniform_float);
+    // recursively estimate the outgoing radiance
+    auto L = EstimateOutGoingRadiance(
+        GfRay(si.position, si.TangentToWorld(wi)), uniform_float, recursion_depth + 1);
+    globalLight =
+        GfCompMult(brdfVal, L) * GfDot(si.shadingNormal, wi) / sample_pos_pdf / russian_roulette;
 
     color = directLight + globalLight;
 

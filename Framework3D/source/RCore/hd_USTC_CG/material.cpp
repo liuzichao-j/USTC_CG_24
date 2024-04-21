@@ -218,9 +218,12 @@ Color Hd_USTC_CG_Material::Sample(
         wi = wo - 2 * GfDot(wo, GfVec3f(0, 0, 1)) * GfVec3f(0, 0, 1);
         pdf = 1;
     }
-    // For diffuse material
-    else {
+    // For metal material
+    else if (record.metallic > 0.5) {
         wi = GGXWeightedDirection(sample2D, record.roughness, pdf);
+    }
+    else {
+        wi = UniformSampleHemiSphere(sample2D, pdf);
     }
 
     return Eval(wi, wo, texcoord);
