@@ -62,7 +62,7 @@ GfVec3f PathIntegrator::EstimateOutGoingRadiance(
 
     // HW7_TODO: Estimate global lighting here.
     GfVec3f globalLight = GfVec3f(0.f);
-    const float russian_roulette = 1.0;
+    const float russian_roulette = 0.9;
     if (uniform_float() > russian_roulette) {
         // Introduce Russian Roulette by randomly terminate the path
         return directLight;
