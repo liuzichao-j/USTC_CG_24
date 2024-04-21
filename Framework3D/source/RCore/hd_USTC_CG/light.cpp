@@ -347,17 +347,16 @@ Color Hd_USTC_CG_Rect_Light::Sample(
 
     sampled_light_pos = corner0 + (corner2 - corner0) * x + (corner1 - corner0) * y;
 
-    dir = sampled_light_pos - pos;
-    auto distance = dir.GetLength();
-    dir = dir.GetNormalized();
+    dir = (sampled_light_pos - pos).GetNormalized();
+    auto distance = (sampled_light_pos - pos).GetLength();
     auto normal = GfCross(corner2 - corner0, corner1 - corner0).GetNormalized();
     float cosVal = GfDot(-dir, normal);
 
-    sample_light_pdf = 2.0f * distance * distance / (width * height);
+    sample_light_pdf = 2.0f * distance * distance / (width * height) / cosVal;
     if(cosVal < 0) {
         return Color{ 0 };
     }
-    return irradiance * cosVal / M_PI;
+    return irradiance / M_PI;
 }
 
 Color Hd_USTC_CG_Rect_Light::Intersect(const GfRay& ray, float& depth)
@@ -408,7 +407,9 @@ void Hd_USTC_CG_Rect_Light::Sync(
     corner3 = transform.TransformAffine(GfVec3f(0.5 * width, 0.5 * height, 0));
 
     auto diffuse = sceneDelegate->GetLightParamValue(id, HdLightTokens->diffuse).Get<float>();
-    power = sceneDelegate->GetLightParamValue(id, HdLightTokens->color).Get<GfVec3f>() * diffuse;
+    auto intensity =
+        sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity).GetWithDefault<float>();
+    power = sceneDelegate->GetLightParamValue(id, HdLightTokens->color).Get<GfVec3f>() * diffuse * intensity;
 
     // HW7_TODO: calculate irradiance
 

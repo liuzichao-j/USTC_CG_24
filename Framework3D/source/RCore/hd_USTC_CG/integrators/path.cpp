@@ -1,9 +1,9 @@
 #include "path.h"
-#include "utils/sampling.hpp"
 
 #include <random>
 
 #include "surfaceInteraction.h"
+#include "utils/sampling.hpp"
 USTC_CG_NAMESPACE_OPEN_SCOPE
 using namespace pxr;
 
@@ -23,7 +23,7 @@ GfVec3f PathIntegrator::EstimateOutGoingRadiance(
     const std::function<float()>& uniform_float,
     int recursion_depth)
 {
-    if (recursion_depth >= 100) {
+    if (recursion_depth >= 50) {
         return {};
     }
 
@@ -43,7 +43,12 @@ GfVec3f PathIntegrator::EstimateOutGoingRadiance(
     // ray intersects something, stored in si
 
     // This can be customized : Do we want to see the lights? (Other than dome lights?)
-    if (recursion_depth == 0) {
+    if (recursion_depth == 0 && IntersectDomeLight(ray) == GfVec3f(0.f)) {
+        GfVec3f intersecPos;
+        auto light_color = IntersectLights(ray, intersecPos);
+        if (light_color != GfVec3f(0.f)) {
+            return light_color;
+        }
     }
 
     // Flip the normal if opposite
@@ -60,16 +65,20 @@ GfVec3f PathIntegrator::EstimateOutGoingRadiance(
     const float russian_roulette = 1.0;
     if (uniform_float() < russian_roulette) {
         // Introduce Russian Roulette by randomly terminate the path
-
+        // float distance = (si.position - ray.GetStartPoint()).GetLength();
+        // float distance = 1.0f;
         float sample_pos_pdf;
-        GfVec3f wi = CosineWeightedDirection(GfVec2f(uniform_float(), uniform_float()), sample_pos_pdf);
+        GfVec3f wi =
+            UniformSampleHemiSphere(GfVec2f(uniform_float(), uniform_float()), sample_pos_pdf);
         // randomly choose input direction with cosine weight and sample_pos_pdf
         GfVec3f wo = si.WorldToTangent(si.wo);
         auto brdfVal = si.Eval(wi);
         // evaluate the material
-        auto L = EstimateOutGoingRadiance(GfRay(si.position, si.TangentToWorld(wi)), uniform_float, recursion_depth + 1);
+        auto L = EstimateOutGoingRadiance(
+            GfRay(si.position, si.TangentToWorld(wi)), uniform_float, recursion_depth + 1);
         // recursively estimate the outgoing radiance
-        globalLight = GfCompMult(brdfVal, L) * GfDot(si.shadingNormal, wi) / sample_pos_pdf / russian_roulette;
+        globalLight = GfCompMult(brdfVal, L) * GfDot(si.shadingNormal, wi) / sample_pos_pdf /
+                      russian_roulette;
     }
 
     color = directLight + globalLight;

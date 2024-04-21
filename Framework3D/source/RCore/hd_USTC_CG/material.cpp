@@ -209,7 +209,20 @@ Color Hd_USTC_CG_Material::Sample(
 {
     auto sample2D = GfVec2f{ uniform_float(), uniform_float() };
 
-    wi = CosineWeightedDirection(sample2D, pdf);
+    // wi = CosineWeightedDirection(sample2D, pdf);
+
+    // Judge the type of the material
+    auto record = SampleMaterialRecord(texcoord);
+    // For mirror-like material
+    if (record.roughness < 0.01) {
+        wi = wo - 2 * GfDot(wo, GfVec3f(0, 0, 1)) * GfVec3f(0, 0, 1);
+        pdf = 1;
+    }
+    // For diffuse material
+    else {
+        wi = GGXWeightedDirection(sample2D, record.roughness, pdf);
+    }
+
     return Eval(wi, wo, texcoord);
 }
 
