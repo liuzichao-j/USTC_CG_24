@@ -15,17 +15,17 @@
 - 该 GitHub 项目作为本课程作业专用的，设为私有的，不要公开
 
 ### (2) 提交系统
-- 每次作业须通过CES-Alpha系统来完成：[作业提交系统](https://cn.ces-alpha.org/course/register/CG2024/)- 作业提交系统的使用可详细查看：[作业提交系统说明](https://rec.ustc.edu.cn/share/ffe2ccc0-bfcd-11ee-975e-e7adc994d6f4)
+- 每次作业须通过 CES-Alpha 系统来完成：[作业提交系统](https://cn.ces-alpha.org/course/register/CG2024/)- 作业提交系统的使用可详细查看：[作业提交系统说明](https://rec.ustc.edu.cn/share/ffe2ccc0-bfcd-11ee-975e-e7adc994d6f4)
 
 ### (3) 提交要求
-每次作业仅须提交一个压缩包(zip 或 rar 格式)，文件命名为 `ID_姓名_Homework*.rar/zip`，其中包含：
-- 代码 project 的整个文件夹：须删除一些不必要的文件，比如bin、lib、build等
+每次作业仅须提交一个压缩包 (zip 或 rar 格式)，文件命名为 `ID_姓名_Homework*.rar/zip`，其中包含：
+- 代码 project 的整个文件夹：须删除一些不必要的文件，比如 bin、lib、build 等
 - 实验报告
 - 可选：演示视频等其他辅助说明材料
 
 ## 作业布置形式
 
-每次作业在布置的时候会提供两个文件夹`(1) documents`和`(2) project`，前者为本次作业的要求说明，后者为本次作业的项目代码文件夹。
+每次作业在布置的时候会提供两个文件夹 `(1) documents` 和 `(2) project`，前者为本次作业的要求说明，后者为本次作业的项目代码文件夹。
 
 ### (1) 说明文档 `documents` 
 
@@ -53,3 +53,9 @@
 4. 曲面参数化 Tutte Parameterzation [->](./4_tutte_parametrzation/)
 
 5. ARAP参数化 ARAP Parameterzation [->](./5_arap_parametrzation/)
+
+6. 着色器编程 Shader Programming [->](./6_shaders/)
+
+7. 路径追踪 Path Tracing [->](./7_path_tracing/)
+
+8. 弹簧质点系统仿真 Mass Spring Simulation [->](./8_mass_spring/)

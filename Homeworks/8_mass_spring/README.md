@@ -14,7 +14,7 @@
 ## 作业递交
 
 - 递交内容：程序代码、实验报告及 `Blueprints.json` 文件，见[提交文件格式](#提交文件格式)
-- 递交时间：北京时间2024年4月29日（周一）中午12点
+- 递交时间：北京时间 2024 年 4 月 29 日（周一）中午 12 点
 
 ## 要求
 
@@ -22,16 +22,16 @@
 
 - （Optional） 实现基于惩罚力的布料与球之间的碰撞处理，主要原理见[文档：弹簧质点系统仿真简明教程 Part 1](documents/README.md)
 
-- （Optional）复现Liu等人2013年的论文[Fast Simulation of Mass-Spring Systems](https://tiantianliu.cn/papers/liu13fast/liu13fast.pdf)中提出的基于Local-Global思想的快速弹簧质点仿真方法，主要原理可以直接阅读论文或[文档: 弹簧质点仿真简明教程 Part 2](documents/README-part2.md) 
+- （Optional）复现 Liu 等人 2013 年的论文 [Fast Simulation of Mass-Spring Systems](https://tiantianliu.cn/papers/liu13fast/liu13fast.pdf) 中提出的基于 Local-Global 思想的快速弹簧质点仿真方法，主要原理可以直接阅读论文或[文档: 弹簧质点仿真简明教程 Part 2](documents/README-part2.md) 
 
 ## 目的
 
-- 熟悉半隐式与隐式时间积分在基于mesh的仿真中的应用
+- 熟悉半隐式与隐式时间积分在基于 mesh 的仿真中的应用
 - 了解弹簧质点系统这一经典的基于物理的仿真方法
 
 ## 提供的材料
 
-依照上述要求和方法，根据说明文档`(1) documents`和作业框架`(2) Framework3D`的内容进行练习。
+依照上述要求和方法，根据说明文档 `(1) documents` 和作业框架 `(2) Framework3D` 的内容进行练习。
 
 ### (1) 说明文档 `documents` [->](documents/) 
 

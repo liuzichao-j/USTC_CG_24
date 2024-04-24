@@ -24,7 +24,7 @@
 
 ## 1. 了解图像操作
 
-作为图像编程的入门，我们封装了一个图像类 `Image` ，其中提供获取和修改图像属性的基本操作，你可以通过阅读 `CompWarping::invert()`，`CompWarping::mirror()`中的代码，快速上手这些操作，它们分别实现了颜色反转、镜像的图像编辑，一些可能会用到的图像操作如下
+作为图像编程的入门，我们封装了一个图像类 `Image` ，其中提供获取和修改图像属性的基本操作，你可以通过阅读 `CompWarping::invert()`，`CompWarping::mirror()` 中的代码，快速上手这些操作，它们分别实现了颜色反转、镜像的图像编辑，一些可能会用到的图像操作如下
 
 ```c++
 int width(); // 获取宽度
@@ -70,9 +70,9 @@ std::vector<ImVec2> start_points_, end_points_;
 > 
 > 回顾 C++ 的面向对象性质，你需要对 Image Warping 操作进行数学抽象，并设计合理的类结构和接口，在 [2_ImageWarping/](../../../Framework2D/src/assignments/2_ImageWarping/) 下添加合适的 `.h` 文件和 `.cpp` 文件，并且在 `CompWarping` 类里面调用它们。
 
-### Eigen库
+### Eigen 库
 
-- 实现RBF方法需要求解线性方程组，你可以自己实现，也可以从网上找其他程序或库来用
+- 实现 RBF 方法需要求解线性方程组，你可以自己实现，也可以从网上找其他程序或库来用
 - 强烈推荐使用 Eigen 库来求解线性方程组，Eigen 库是强大的数学算法库，是计算机图形学必须了解的算法库
 - 我们提供了 Eigen 库的使用示例：[eigen_example](eigen_example/) 
 
@@ -86,7 +86,7 @@ std::vector<ImVec2> start_points_, end_points_;
 
 <div align=center><img width = 75% src ="figs/white_stitch.jpg"/></div align>
 
-### ANN库（Optional）
+### ANN 库（Optional）
 
 若你需要用搜索最近点的任务（在补洞的任务中），建议学习使用如下的库：
 

@@ -22,7 +22,7 @@
 
 ## 学习过程
 
-- 通过作业4 我们已经 [配置好了框架](../../../Framework3D/README.md)，并且学会了节点文件的编写和 [网格数据结构](../../4_tutte_parametrzation/documents/openmesh.md) 的基本操作。本次作业继续沿用作业 4 的形式，你只需要在[指定目录](../../../Framework3D/source/nodes/nodes/geometry/)下为添加节点实现，组合现有的节点，实现[参考论文](https://cs.harvard.edu/~sjg/papers/arap.pdf)中的 ARAP 参数化算法，它对应一个未实现的[ARAP 参数化节点](../../../Framework3D/source/nodes/nodes/geometry/node_arap.cpp)。
+- 通过作业 4 我们已经 [配置好了框架](../../../Framework3D/README.md)，并且学会了节点文件的编写和 [网格数据结构](../../4_tutte_parametrzation/documents/openmesh.md) 的基本操作。本次作业继续沿用作业 4 的形式，你只需要在[指定目录](../../../Framework3D/source/nodes/nodes/geometry/)下为添加节点实现，组合现有的节点，实现[参考论文](https://cs.harvard.edu/~sjg/papers/arap.pdf)中的 ARAP 参数化算法，它对应一个未实现的 [ARAP 参数化节点](../../../Framework3D/source/nodes/nodes/geometry/node_arap.cpp)。
 
 - 可阅读论文和课件，按照如下思路完成本次作业：
   - **Step 1:** 实现一个**初始参数化**。
@@ -65,7 +65,7 @@
 
 ### MeshLab
 
-[MeshLab](https://www.meshlab.net/) 是一个开源的3D几何处理框架。它可以用来查看多种 3D 数据，也内置有大量经典的几何处理算法。例如可以使用它来进行网格参数化：
+[MeshLab](https://www.meshlab.net/) 是一个开源的 3D 几何处理框架。它可以用来查看多种 3D 数据，也内置有大量经典的几何处理算法。例如可以使用它来进行网格参数化：
 
 #### LSCM (Least Squares Conformal Maps) (Equivalent to ASAP)
 

@@ -1,4 +1,4 @@
-# Inverse distance-weighted interpolation methods[^IDW] 
+# Inverse distance-weighted interpolation methods [^IDW] 
 
 ## 问题描述
 

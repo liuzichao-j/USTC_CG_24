@@ -4,7 +4,7 @@
 
 项目目录 [Framework2D/](../../../Framework2D/)，其中包含以下子目录：
 - [third_party/](../../../Framework2D/third_party/)：第三方依赖库
-    - [imgui/](../../../Framework2D/third_party/imgui/)：跨平台C++图形界面库 [Dear ImGui](https://github.com/ocornut/imgui)
+    - [imgui/](../../../Framework2D/third_party/imgui/)：跨平台 C++ 图形界面库 [Dear ImGui](https://github.com/ocornut/imgui)
     - [ImGuiFileDialog/](../../../Framework2D/third_party/ImGuiFileDialog/)：ImGui 的[文件窗口实现](https://github.com/aiekick/ImGuiFileDialog)
     - OpenGL 内核相关库：[glfw/](../../../Framework2D/third_party/glfw/)、[glad/](../../../Framework2D/third_party/glad/)；OpenGL（Open Graphics Library）是一个跨编程语言、跨平台的编程图形程序接口（API），它告诉硬件应该如何实现图形的绘制；而 glfw, glad 提供了 OpenGL 的窗口创建、函数调用等功能，方便人们去使用 OpenGL 来进行绘图操作。**OpenGL 在这里作为 ImGui 的渲染内核使用，绑定了 OpenGL 作为内核之后，ImGui 就可以在屏幕上绘制图形界面，我们暂时不需要关心其中的细节**
     - [stb_image.h](../../../Framework2D/third_party/stb_image.h)：图像解码库，用以从文件中读取图像
@@ -25,7 +25,7 @@
 Step 0:
 如果还没有将此仓库获取到本地，请参考[简易说明](../../../Softwares/Github.md)
 
-获取third_party中的子仓库：
+获取 third_party 中的子仓库：
 ```
 git submodule update --init --recursive
 ```
@@ -45,7 +45,7 @@ Step 3: `Ctrl+Shift+P` 打开 VS Code 命令框，选择 CMake: Select a Kit，�
 
 Step 4: 再次打开 VS Code 命令框，选择 CMake: Build，等待项目生成。
 
-此时，可以看见项目的根目录下出现了三个文件夹 build/、bin/和 libs/，其中 bin/ 文件夹下有可执行文件 `demo.exe`，执行该文件可以出现以下界面
+此时，可以看见项目的根目录下出现了三个文件夹 build/、bin/ 和 libs/，其中 bin/ 文件夹下有可执行文件 `demo.exe`，执行该文件可以出现以下界面
 
 <div align=center><img width = 75% src ="figs/demo_0.png"/></div align>
 
