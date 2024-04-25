@@ -146,7 +146,7 @@ void FastMassSpring::step()
  <img src="../images/fast_mass_spring.gif" style="zoom:100%" />
 </div>
 
-此次作业所需要连接的节点图与 Part 1 一样，只需要通过打开开关 `enable Liu13` 来切换到该加速方法。
+此次作业所需要连接的节点图与 Part 1 一样，只需要通过打开开关 `enable Liu13` 来切换到该加速方法。建议使用 `Release` 模式编译来减少节点图其他部分的时间代价。如果想凸显加速方法相比于 Part 1 部分方法的优势，可以增加 mesh 分辨率，如使用 `grid40x40.usda`。
 
 
 值得一提的是，Liu 指出，这一加速方法在迭代次数增加时的结果会逐渐接近 Newton 法求解的结果，如下图所示。**鼓励大家在报告中包含不同迭代次数的仿真结果的比较**。
