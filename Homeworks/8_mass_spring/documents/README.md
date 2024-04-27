@@ -45,7 +45,7 @@ $$
 
 其中的 $\mathbf{M} \in \mathbb{R}^{3n \times 3n}$ 为系统的质量矩阵，这里我们将其简单地设置为一个对角矩阵（每个顶点对应的 $\mathbb{R}^{3\times 3}$ = `mass_per_vertex`乘3x3单位矩阵  ）。
 
-> 扩展知识：质量矩阵 $\mathbf{M}$ 实际上描述了一个有限单元的质量与其顶点质量的关系，有两种类别：1. Lump Mass Matrix. 质量全部加到对角项上，也是我们本次作业选择的版本）2. Consistant Mass Matrix. 包含非对角项，是通过型函数 (Shape Function) 推导出来的。具体可以阅读[Consistent vs Lumped Mass](https://www.strand7.com/strand7r3help/Content/Topics/Elements/ElementsMassMatrix.htm). 
+> 扩展知识：质量矩阵 $\mathbf{M}$ 实际上描述了一个有限单元的质量与其顶点质量的关系，有两种类别：1. Lump Mass Matrix. 质量全部加到对角项上，也是我们本次作业选择的版本）2. Consistant Mass Matrix. 包含非对角项，是通过型函数 (Shape Function) 推导出来的。具体可以阅读 [Consistent vs Lumped Mass](https://www.strand7.com/strand7r3help/Content/Topics/Elements/ElementsMassMatrix.htm). 
 
 根据能量观点，记 $E$ 为系统的弹性能，那么弹性力 $\mathbf{f}_{\text{int}}$ ：
 
@@ -76,7 +76,7 @@ $$
 \nabla E = \sum_i k (\|\mathbf{x}_i\| - L)\frac{\mathbf{x}_i}{\|\mathbf{x}_i\|} \tag{3}
 $$
 
-只要在 `MassSpring.cpp`（(在文件夹 [`Framework3D\source\nodes\nodes\geometry\mass_spring\`](../../../Framework3D/source/nodes/nodes/geometry/mass_spring/)中)的 `computeGrad` 函数中填上这一部分梯度的计算:
+只要在 `MassSpring.cpp`（在文件夹 [`Framework3D\source\nodes\nodes\geometry\mass_spring\`](../../../Framework3D/source/nodes/nodes/geometry/mass_spring/) 中）的 `computeGrad` 函数中填上这一部分梯度的计算:
 
 
 ```C++
@@ -128,7 +128,7 @@ dirichlet_bc_mask[n_fix - 1] = true;
  <img src="../images/semi-implicit.gif" style="zoom:100%" />
 </div>
 
-我们鼓励大家先在小 mesh 上（如 `grid1x1` 与 `grid2x2`）进行实验，遇到错误的结果可以直接打印出所需要查看的变量或使用断点调试，在程序运行无误后再使用更大的 mesh（`grid10x10` 与 `grid20x20`,甚至自行构建更大规模的 mesh）进行实验。
+我们鼓励大家先在小 mesh 上（如 `grid1x1` 与 `grid2x2`）进行实验，遇到错误的结果可以直接打印出所需要查看的变量或使用断点调试，在程序运行无误后再使用更大的 mesh（`grid10x10` 与 `grid20x20`，甚至自行构建更大规模的 mesh）进行实验。
 
 你也可以尝试固定不同的点，并比较不同的劲度系数、时间步长、damping 对结果的影响，不同规模的 mesh 也需要设置不同的仿真参数，**鼓励在报告中包含不同仿真参数的结果比较相关内容**。
 
@@ -164,7 +164,7 @@ dirichlet_bc_mask[n_fix - 1] = true;
 </div>
 
 > 爆炸的原因与不同时间积分方法的稳定性有关系。
-> 如果想了解从几何的角度去解释显式欧拉积分、半隐式欧拉积分（又名辛欧拉积分，与辛几何有关系）与隐式欧拉积分的稳定性，请阅读[Discrete Geometric Mechanics for Variational Time Integrators](http://www.geometry.caltech.edu/pubs/SD06.pdf)
+> 如果想了解从几何的角度去解释显式欧拉积分、半隐式欧拉积分（又名辛欧拉积分，与辛几何有关系）与隐式欧拉积分的稳定性，请阅读 [Discrete Geometric Mechanics for Variational Time Integrators](http://www.geometry.caltech.edu/pubs/SD06.pdf)
 > 
 
 接下来我们需要实现隐式欧拉积分：

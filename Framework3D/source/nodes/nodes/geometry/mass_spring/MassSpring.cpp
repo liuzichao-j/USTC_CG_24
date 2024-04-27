@@ -1,4 +1,6 @@
 #include "MassSpring.h"
+
+#include <cmath>
 #include <iostream>
 
 namespace USTC_CG::node_mass_spring {
@@ -21,7 +23,7 @@ MassSpring::MassSpring(const Eigen::MatrixXd& X, const EdgeSet& E)
     // Initialize the mask for Dirichlet boundary condition
     dirichlet_bc_mask.resize(X.rows(), false);
 
-    // (HW_TODO) Fix two vertices, feel free to modify this 
+    // (HW_TODO) Fix two vertices, feel free to modify this
     unsigned n_fix = sqrt(X.rows());  // Here we assume the cloth is square
     dirichlet_bc_mask[0] = true;
     dirichlet_bc_mask[n_fix - 1] = true;
@@ -33,36 +35,85 @@ void MassSpring::step()
 
     unsigned n_vertices = X.rows();
 
-    // The reason to not use 1.0 as mass per vertex: the cloth gets heavier as we increase the resolution
-    double mass_per_vertex =
-        mass / n_vertices; 
+    // The reason to not use 1.0 as mass per vertex: the cloth gets heavier as we increase the
+    // resolution
+    double mass_per_vertex = mass / n_vertices;
 
     //----------------------------------------------------
     // (HW Optional) Bonus part: Sphere collision
     Eigen::MatrixXd acceleration_collision =
-        getSphereCollisionForce(sphere_center.cast<double>(), sphere_radius);
+        getSphereCollisionForce(sphere_center.cast<double>(), sphere_radius) / mass_per_vertex;
     //----------------------------------------------------
 
     if (time_integrator == IMPLICIT_EULER) {
         // Implicit Euler
         TIC(step)
 
-        // (HW TODO) 
-        // auto H_elastic = computeHessianSparse(stiffness);  // size = [nx3, nx3]
+        // (HW TODO)
+        auto H_elastic = computeHessianSparse(stiffness);  // size = [nx3, nx3]
+        Eigen::SparseMatrix<double> H(n_vertices * 3, n_vertices * 3);
+        H.setIdentity();
+        H = H * mass_per_vertex / h / h + H_elastic;
+        // if (!checkSPD(H)) {
+        //     std::cerr << "Hessian is not SPD!" << std::endl;
+        //     return;
+        // }
 
-        // compute Y 
+        Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+        solver.compute(H);
+        if (solver.info() != Eigen::Success) {
+            std::cerr << "Decomposition failed!" << std::endl;
+            return;
+        }
 
-        // Solve Newton's search direction with linear solver 
-        
-        // update X and vel 
+        // compute Y
+        Eigen::MatrixXd Y = X + h * vel;
+        for (int i = 0; i < n_vertices; i++) {
+            if (!dirichlet_bc_mask[i]) {
+                Y.row(i) += h * h * acceleration_ext.transpose();
+                if (enable_sphere_collision) {
+                    Y.row(i) += h * h * acceleration_collision.row(i);
+                }
+            }
+        }
+
+        auto grad_g = computeGrad(stiffness);
+        for (int i = 0; i < n_vertices; i++) {
+            if (!dirichlet_bc_mask[i]) {
+                grad_g.row(i) += mass_per_vertex * (X.row(i) - Y.row(i)) / h / h;
+            }
+        }
+        auto grad_g_flatten = flatten(grad_g);
+
+        // Solve Newton's search direction with linear solver
+        // Delta x = H^(-1) * grad, H * Delta x = grad
+        auto delta_X_flatten = solver.solve(grad_g_flatten);
+        if (solver.info() != Eigen::Success) {
+            std::cerr << "Solving failed!" << std::endl;
+            return;
+        }
+        auto delta_X = unflatten(delta_X_flatten);
+
+        // update X and vel
+        for (int i = 0; i < n_vertices; i++) {
+            if (!dirichlet_bc_mask[i]) {
+                X.row(i) -= delta_X.row(i);
+                vel.row(i) = -delta_X.row(i) / h;
+            }
+        }
 
         TOC(step)
     }
     else if (time_integrator == SEMI_IMPLICIT_EULER) {
-
         // Semi-implicit Euler
         Eigen::MatrixXd acceleration = -computeGrad(stiffness) / mass_per_vertex;
-        acceleration.rowwise() += acceleration_ext.transpose();
+        // acceleration.rowwise() += acceleration_ext.transpose();
+        for (int i = 0; i < n_vertices; i++) {
+            if (!dirichlet_bc_mask[i]) {
+                acceleration.row(i) += acceleration_ext.transpose();
+            }
+        }
+        // acceleration (n x 3) stores the acceleration for each vertex
 
         // -----------------------------------------------
         // (HW Optional)
@@ -72,9 +123,12 @@ void MassSpring::step()
         // -----------------------------------------------
 
         // (HW TODO): Implement semi-implicit Euler time integration
-
-        // Update X and vel 
-        
+        // Update X and vel
+        for (int i = 0; i < n_vertices; i++) {
+            vel.row(i) += h * acceleration.row(i);
+            X.row(i) += h * vel.row(i);
+        }
+        vel *= std::pow(damping, h);
     }
     else {
         std::cerr << "Unknown time integrator!" << std::endl;
@@ -92,8 +146,12 @@ double MassSpring::computeEnergy(double stiffness)
     double sum = 0.;
     unsigned i = 0;
     for (const auto& e : E) {
+        // For each edge
         auto diff = X.row(e.first) - X.row(e.second);
+        // X (n x 3) stores the vertex positions
+        // E (m x 2) stores the edge indices
         auto l = E_rest_length[i];
+        // E_rest_length stores the rest length of each edge, num. i
         sum += 0.5 * stiffness * std::pow((diff.norm() - l), 2);
         i++;
     }
@@ -103,13 +161,21 @@ double MassSpring::computeEnergy(double stiffness)
 Eigen::MatrixXd MassSpring::computeGrad(double stiffness)
 {
     Eigen::MatrixXd g = Eigen::MatrixXd::Zero(X.rows(), X.cols());
+    // g (n x 3) stores the gradient of the energy. The gradient is about the vertex i.
     unsigned i = 0;
     for (const auto& e : E) {
         // --------------------------------------------------
         // (HW TODO): Implement the gradient computation
-        
+        const Eigen::Vector3d x = X.row(e.first) - X.row(e.second);
+        g.row(e.first) += stiffness * (x.norm() - E_rest_length[i]) * x.normalized();
+        g.row(e.second) += -stiffness * (x.norm() - E_rest_length[i]) * x.normalized();
         // --------------------------------------------------
         i++;
+    }
+    for (int j = 0; j < X.rows(); j++) {
+        if (dirichlet_bc_mask[j]) {
+            g.row(j).setZero();
+        }
     }
     return g;
 }
@@ -122,21 +188,50 @@ Eigen::SparseMatrix<double> MassSpring::computeHessianSparse(double stiffness)
     unsigned i = 0;
     auto k = stiffness;
     const auto I = Eigen::MatrixXd::Identity(3, 3);
+
+    std::vector<Eigen::Triplet<double>> triplets;
     for (const auto& e : E) {
         // --------------------------------------------------
         // (HW TODO): Implement the sparse version Hessian computation
-        // Remember to consider fixed points 
+        // Remember to consider fixed points
         // You can also consider positive definiteness here
-       
+        const Eigen::Vector3d x = X.row(e.first) - X.row(e.second);
+        const Eigen::MatrixXd He =
+            k * (x * x.transpose() / x.squaredNorm() +
+                 (1 - E_rest_length[i] / x.norm()) * (I - x * x.transpose() / x.squaredNorm()));
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (!dirichlet_bc_mask[e.first]) {
+                    if (!dirichlet_bc_mask[e.second]) {
+                        triplets.push_back(
+                            Eigen::Triplet<double>(e.first * 3 + i, e.first * 3 + j, He(i, j)));
+                        triplets.push_back(
+                            Eigen::Triplet<double>(e.first * 3 + i, e.second * 3 + j, -He(i, j)));
+                        triplets.push_back(
+                            Eigen::Triplet<double>(e.second * 3 + i, e.first * 3 + j, -He(i, j)));
+                        triplets.push_back(
+                            Eigen::Triplet<double>(e.second * 3 + i, e.second * 3 + j, He(i, j)));
+                    }
+                    else {
+                        triplets.push_back(
+                            Eigen::Triplet<double>(e.first * 3 + i, e.first * 3 + j, He(i, j)));
+                    }
+                }
+                else {
+                    if (!dirichlet_bc_mask[e.second]) {
+                        triplets.push_back(
+                            Eigen::Triplet<double>(e.second * 3 + i, e.second * 3 + j, He(i, j)));
+                    }
+                }
+            }
+        }
         // --------------------------------------------------
-
         i++;
     }
-    
+    H.setFromTriplets(triplets.begin(), triplets.end());
     H.makeCompressed();
     return H;
 }
-
 
 bool MassSpring::checkSPD(const Eigen::SparseMatrix<double>& A)
 {
@@ -160,12 +255,13 @@ Eigen::MatrixXd MassSpring::getSphereCollisionForce(Eigen::Vector3d center, doub
 {
     Eigen::MatrixXd force = Eigen::MatrixXd::Zero(X.rows(), X.cols());
     for (int i = 0; i < X.rows(); i++) {
-       // (HW Optional) Implement penalty-based force here 
+        // (HW Optional) Implement penalty-based force here
+        force.row(i) = collision_penalty_k *
+                       std::max(0.0, collision_scale_factor * radius - (X.row(i) - center).norm()) *
+                       (X.row(i) - center).normalized();
     }
     return force;
 }
 // ----------------------------------------------------------------------------------
 
-
 }  // namespace USTC_CG::node_mass_spring
-
