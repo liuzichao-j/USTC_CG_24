@@ -406,7 +406,7 @@ Eigen::MatrixXd MassSpring::getSphereCollisionForce(Eigen::Vector3d center, doub
 
 至此，你已经实现了一个基础的带与球碰撞的弹簧指导仿真系统。但是基于惩罚力的方式无法保证不穿透，需要手动调惩罚力的因子。
 
-所需要连接的节点图（注意球和布料的`Write USD`节点的`Prim Path`需要不一样，否则显示会出问题）：
+所需要连接的节点图（注意球和布料的 `Write USD` 节点的 `Prim Path` 需要不一样，否则显示会出问题）：
 
 <div  align="center">    
  <img src="../images/nodes-collision.png" style="zoom:100%" />

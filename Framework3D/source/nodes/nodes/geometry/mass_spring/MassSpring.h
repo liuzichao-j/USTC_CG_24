@@ -47,6 +47,7 @@ class MassSpring {
 
     // make matrix positive definite
     // Eigen::SparseMatrix<double> makeSPD(const Eigen::SparseMatrix<double> &A);
+    void toSPD(Eigen::SparseMatrix<double> &A);
     bool checkSPD(const Eigen::SparseMatrix<double> &A);
 
     Eigen::MatrixXd getVelocity() const

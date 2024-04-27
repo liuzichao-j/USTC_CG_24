@@ -42,7 +42,7 @@ void MassSpring::step()
     //----------------------------------------------------
     // (HW Optional) Bonus part: Sphere collision
     Eigen::MatrixXd acceleration_collision =
-        getSphereCollisionForce(sphere_center.cast<double>(), sphere_radius) / mass_per_vertex;
+        getSphereCollisionForce(sphere_center.cast<double>(), sphere_radius);
     //----------------------------------------------------
 
     if (time_integrator == IMPLICIT_EULER) {
@@ -58,6 +58,7 @@ void MassSpring::step()
         //     std::cerr << "Hessian is not SPD!" << std::endl;
         //     return;
         // }
+        toSPD(H);
 
         Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
         solver.compute(H);
@@ -242,6 +243,36 @@ bool MassSpring::checkSPD(const Eigen::SparseMatrix<double>& A)
     return eigen_values.minCoeff() >= 1e-10;
 }
 
+#include "Spectra/SymEigsSolver.h"
+#include "Spectra/MatOp/SparseSymMatProd.h"
+
+void MassSpring::toSPD(Eigen::SparseMatrix<double> &A)
+{
+    // Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(A);
+    // auto eigen_values = es.eigenvalues();
+    // if (eigen_values.minCoeff() < 0) {
+    //     printf("Eigenvalue < 0, make SPD\n");
+    //     Eigen::SparseMatrix<double> B(A.rows(), A.cols());
+    //     B.setIdentity();
+    //     A += B * (1 - eigen_values.minCoeff());
+    // }
+
+    // Spectra::SparseSymShiftSolve<double> op(A);
+    // Spectra::SymEigsShiftSolver<double, Eigen::Spectra::LARGEST_MAGN, Eigen::Spectra::SparseSymShiftSolve<double>> eigs(&op, 1, 1e-6, 10);
+    Spectra::SparseSymMatProd<double> op(A);
+    Spectra::SymEigsSolver<Spectra::SparseSymMatProd<double>> eigs(op, 1, 10);
+    eigs.init();
+    eigs.compute(Spectra::SortRule::LargestMagn);
+    auto minimal = eigs.eigenvalues()[0];
+    if (minimal < 0) {
+        printf("Eigenvalue < 0, make SPD\n");
+        Eigen::SparseMatrix<double> B(A.rows(), A.cols());
+        B.setIdentity();
+        A += B * (1e-6 - minimal);
+    }
+    return;
+}
+
 void MassSpring::reset()
 {
     std::cout << "reset" << std::endl;
@@ -256,9 +287,10 @@ Eigen::MatrixXd MassSpring::getSphereCollisionForce(Eigen::Vector3d center, doub
     Eigen::MatrixXd force = Eigen::MatrixXd::Zero(X.rows(), X.cols());
     for (int i = 0; i < X.rows(); i++) {
         // (HW Optional) Implement penalty-based force here
-        force.row(i) = collision_penalty_k *
-                       std::max(0.0, collision_scale_factor * radius - (X.row(i) - center).norm()) *
-                       (X.row(i) - center).normalized();
+        auto delta_x = X.row(i) - center.transpose();
+        force.row(i) += collision_penalty_k *
+                        std::max(0.0, collision_scale_factor * radius - delta_x.norm()) *
+                        delta_x.normalized();
     }
     return force;
 }
