@@ -243,33 +243,38 @@ bool MassSpring::checkSPD(const Eigen::SparseMatrix<double>& A)
     return eigen_values.minCoeff() >= 1e-10;
 }
 
-#include "Spectra/SymEigsSolver.h"
-#include "Spectra/MatOp/SparseSymMatProd.h"
+// #include "Spectra/SymEigsShiftSolver.h"
+// #include "Spectra/MatOp/SparseSymShiftSolve.h"
+
+// #include "Spectra/SymEigsSolver.h"
+// #include "Spectra/MatOp/SparseSymMatProd.h"
 
 void MassSpring::toSPD(Eigen::SparseMatrix<double> &A)
 {
-    // Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(A);
-    // auto eigen_values = es.eigenvalues();
-    // if (eigen_values.minCoeff() < 0) {
-    //     printf("Eigenvalue < 0, make SPD\n");
-    //     Eigen::SparseMatrix<double> B(A.rows(), A.cols());
-    //     B.setIdentity();
-    //     A += B * (1 - eigen_values.minCoeff());
-    // }
-
-    // Spectra::SparseSymShiftSolve<double> op(A);
-    // Spectra::SymEigsShiftSolver<double, Eigen::Spectra::LARGEST_MAGN, Eigen::Spectra::SparseSymShiftSolve<double>> eigs(&op, 1, 1e-6, 10);
-    Spectra::SparseSymMatProd<double> op(A);
-    Spectra::SymEigsSolver<Spectra::SparseSymMatProd<double>> eigs(op, 1, 10);
-    eigs.init();
-    eigs.compute(Spectra::SortRule::LargestMagn);
-    auto minimal = eigs.eigenvalues()[0];
-    if (minimal < 0) {
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(A);
+    auto eigen_values = es.eigenvalues();
+    printf("Minimal Eigen Value: %lf\n",eigen_values.minCoeff());
+    if (eigen_values.minCoeff() < 0) {
         printf("Eigenvalue < 0, make SPD\n");
         Eigen::SparseMatrix<double> B(A.rows(), A.cols());
         B.setIdentity();
-        A += B * (1e-6 - minimal);
+        A += B * (1e-6 - eigen_values.minCoeff());
     }
+
+    // // Spectra::SparseSymShiftSolve<double> op(A);
+    // // Spectra::SymEigsShiftSolver<double, Eigen::Spectra::LARGEST_MAGN, Eigen::Spectra::SparseSymShiftSolve<double>> eigs(&op, 1, 1e-6, 10);
+    // Spectra::SparseSymMatProd<double> op(A);
+    // Spectra::SymEigsSolver<Spectra::SparseSymMatProd<double>> eigs(op, 1, 10);
+    // eigs.init();
+    // eigs.compute(Spectra::SortRule::LargestMagn);
+    // auto minimal = eigs.eigenvalues()[0];
+    // printf("Minimal Eigen Value: %lf\n",minimal);
+    // if (minimal < 0) {
+    //     printf("Eigenvalue < 0, make SPD\n");
+    //     Eigen::SparseMatrix<double> B(A.rows(), A.cols());
+    //     B.setIdentity();
+    //     A += B * (1e-6 - minimal);
+    // }
     return;
 }
 

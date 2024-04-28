@@ -167,9 +167,9 @@ void FastMassSpring::step()
 
 通过本次作业的 Part1 和 Part2，大家应该对基于弹簧质点的弹性体仿真有了更加深刻的认识，基于牛顿法的求解流程可以拓展到更多的能量模型与离散方式（如有限元）。
 
-值得一提的是，Liu 等人提出的该加速方法是图形学中经典的基于 Local-Glocal 思想的弹性体仿真方法[投影动力学方法（Projective Dynamics）](https://www.projectivedynamics.org/Projective_Dynamics/index.html)的前身。如果有兴趣进一步学习相关知识，可以学习[【GAMES103-基于物理的计算机动画入门】 ](https://www.bilibili.com/video/BV12Q4y1S73g/?p=5&share_source=copy_web&vd_source=19d965dd50171e7e3327ff6e149567c2)课程。
+值得一提的是，Liu 等人提出的该加速方法是图形学中经典的基于 Local-Glocal 思想的弹性体仿真方法 [投影动力学方法（Projective Dynamics）](https://www.projectivedynamics.org/Projective_Dynamics/index.html)的前身。如果有兴趣进一步学习相关知识，可以学习[【GAMES103-基于物理的计算机动画入门】 ](https://www.bilibili.com/video/BV12Q4y1S73g/?p=5&share_source=copy_web&vd_source=19d965dd50171e7e3327ff6e149567c2)课程。
 
-> 拓展思考：既然我们可以从能量最优化的角度去求解弹性体仿真问题，那么可以从最优化领域引入更多的求解/加速方法，如使用拟牛顿法及其变种（图形学中常用的是 L-BFGS）等。
+> 拓展思考：既然我们可以从能量最优化的角度去求解弹性体仿真问题，那么可以从最优化领域引入更多的求解 / 加速方法，如使用拟牛顿法及其变种（图形学中常用的是 L-BFGS）等。
 
 ### 参考资料
 1. 论文 [Fast Simulation of Mass-Spring Systems](https://tiantianliu.cn/papers/liu13fast/liu13fast.pdf)
