@@ -255,8 +255,10 @@ $$
 \nabla^2 g \Delta \mathbf{x} = -\nabla g \tag{7}
 $$ 
 
+在最优化中，求解一个优化问题可能需要迭代多次，直到收敛（ $\|\nabla g\|$ 小于阈值 ），我们这里出于效率考虑，在一个时间步内只进行一次牛顿法的迭代，你也可以尝试在一个时间步内让牛顿法迭代多次直到收敛，并比较两种做法的仿真结果。
+
 > 这里其实还涉及到一个 Line Search 的部分，一般基于线搜索方法优化问题的流程：1. 先确定搜索方向 $\mathbf{p}$（我们这里 $\mathbf{p} = (\nabla^2 g)^{-1}\mathbf{\nabla}g$ ），2. 然后确定要前进的步长 $\alpha$（该步骤称为 Line Search），3. 最后更新 $\mathbf{x}^{n+1} = \mathbf{x}^n - \alpha \mathbf{p}$ 。
->由于牛顿法的推荐步长是 1，这里我们就不额外进行 Line Search
+> 由于牛顿法的推荐步长是 1，这里我们就不额外进行 Line Search
 
 弹簧能量的Hessian $\mathbf{H}$ 是一个稀疏矩阵（只有相邻的顶点才会在矩阵中有对应的非零元素），我们使用 `Eigen::SparseMatrix` 来存储。
 
@@ -337,7 +339,7 @@ $$
 \mathbf{V} = (\mathbf{X}^{\text{new}} - \mathbf{X}^{\text{old}}) / h  
 $$  
 
-如果实现正确，将 1. 劲度系数 `stiffness` 和 2. 时间步长 `h` 设置为合理的值（隐式时间积分不需要调阻尼系数），并考虑了 Hessian 的正定性：就可以看到下面的仿真结果（gif 经过加速），可以实现比半隐式时间积分大 20 倍甚至更多的时间步长（但由于需要组装 Hessian 并求解线性方程组，隐式时间积分每一步的时间会比半隐式时间积分长）：
+如果实现正确，将 1. 劲度系数 `stiffness`（如100-1000）和 2. 时间步长 `h`（如0.01）设置为合理的值（隐式时间积分不需要调阻尼系数），并考虑了 Hessian 的正定性：就可以看到下面的仿真结果（gif 经过加速），可以实现比半隐式时间积分大 20 倍甚至更多的时间步长（但由于需要组装 Hessian 并求解线性方程组，隐式时间积分每一步的时间会比半隐式时间积分长）：
 
 <div  align="center">    
  <img src="../images/implicit-euler.gif" style="zoom:80%" />
@@ -434,7 +436,7 @@ Eigen::MatrixXd MassSpring::getSphereCollisionForce(Eigen::Vector3d center, doub
 
 在实践中，我们发现牛顿法求解弹簧质点仿真还是有点慢。（我们提供了 `TIC` 和 `TOC` 宏来打印程序运行时间）
 
-如何加速？我们将在 Part2 进行介绍，这也是本次作业的选做内容。
+如何加速？我们将在 [Part2](./README-part2.md) 进行介绍，这也是本次作业的选做内容。
 
 ## 参考资料
 1. GAMES 103 Lecture 2 & 5 
