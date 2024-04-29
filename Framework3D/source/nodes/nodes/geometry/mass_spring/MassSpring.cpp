@@ -56,7 +56,8 @@ void MassSpring::step()
         H = H * mass_per_vertex / h / h + H_elastic;
         toSPD(H);
 
-        Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+        // Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+        Eigen::SimplicialLLT<Eigen::SparseMatrix<double>> solver;
         solver.compute(H);
         if (solver.info() != Eigen::Success) {
             std::cerr << "Decomposition failed!" << std::endl;
@@ -122,10 +123,9 @@ void MassSpring::step()
         // (HW TODO): Implement semi-implicit Euler time integration
         // Update X and vel
         for (int i = 0; i < n_vertices; i++) {
-            vel.row(i) += h * acceleration.row(i);
+            vel.row(i) += h * std::pow(damping, h) * acceleration.row(i);
             X.row(i) += h * vel.row(i);
         }
-        vel *= std::pow(damping, h);
     }
     else {
         std::cerr << "Unknown time integrator!" << std::endl;

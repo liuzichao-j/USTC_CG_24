@@ -22,7 +22,8 @@ class FastMassSpring : public MassSpring {
    protected:
     // Custom variables, like prefactorized A
     Eigen::SparseMatrix<double> A;
-    Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+    // Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+    Eigen::SimplicialLLT<Eigen::SparseMatrix<double>> solver;
 
     // Renumbering vectors
     std::vector<int> point_to_id;
