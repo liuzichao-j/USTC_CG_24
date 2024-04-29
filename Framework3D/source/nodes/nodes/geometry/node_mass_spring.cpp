@@ -104,6 +104,9 @@ static void node_mass_spring_declare(NodeDeclarationBuilder& b)
     b.add_input<decl::Int>("enable Liu13").default_val(0).min(0).max(1);
     b.add_input<decl::Int>("enable sphere collision").default_val(0).min(0).max(1);
 
+    // iteration times for Liu13
+    b.add_input<decl::Int>("Liu13 iteration times").default_val(100).min(1).max(1000);
+
     // Current time in node system 
     b.add_input<decl::Float>("time_code");
 
@@ -141,10 +144,13 @@ static void node_mass_spring_exec(ExeParams params)
             bool enable_liu13 =  params.get_input<int>("enable Liu13") == 1 ? true : false;
             if (enable_liu13) { 
                 // HW Optional 
-				mass_spring = std::make_shared<FastMassSpring>(vertices, edges, k, h);
+                const int iter = params.get_input<int>("Liu13 iteration times");
+				mass_spring = std::make_shared<FastMassSpring>(vertices, edges, k, h, iter);
 			}
 			else
+            {
 				mass_spring = std::make_shared<MassSpring>(vertices, edges);
+            }
 
             // simulation parameters
             mass_spring->stiffness = k;
