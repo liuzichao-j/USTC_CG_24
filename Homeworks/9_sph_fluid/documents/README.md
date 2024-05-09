@@ -122,7 +122,7 @@ static double W_zero(double h);
 void step()
 {
     ps_.assign_particles_to_cells(); 
-    ps_.searchNeighbors(); 
+    ps_.search_neighbors(); 
     // ... other code 
 }
 ```
@@ -245,6 +245,8 @@ $$
 
 程序中，  $k_1$ 为参数 `stiffness` ,  $k_2$ 为参数 `exponent`  。注意，压强一般需要是大于0的，在粒子不足的时候，可以让 `p_i = max(0.0, p_i)`。  
 
+> 这类公式又被称为 "Equation of State (EOS)"
+
 压力的加速度： $-\frac{1}{\rho} \nabla p$ ， 其中：
 
 $$
@@ -276,17 +278,15 @@ void SPHBase::compute_pressure_gradient_acceleration()
 ```c++
 void WCSPH::step()
 {
-    // Not implemented, should be implemented in children classes WCSPH, IISPH, etc. 
+    // 1. Assign particles to cells & search for neighbors 
 
-    // 1. assign particle to cells & search neighbors 
+    // 2. Compute density (actually, you can directly compute pressure here)
 
-    // 2. compute density (actually, you can direct compute pressure here)
-
-    // 3. compute non-pressure accelerations, e.g. viscosity force, gravity
+    // 3. Compute non-pressure accelerations, e.g. viscosity force, gravity
     
-    // 4. compute pressure gradient acceleration
+    // 4. Compute pressure gradient acceleration
 
-    // 5. update velocity and positions, call advect()
+    // 5. Update velocity and positions, call advect()
 }
 ```
 
@@ -389,6 +389,8 @@ for (auto& p : ps_.particles()) {
 ```
 
 关于OpenMP的更加详细的介绍可以阅读： [openmp tutorials and articles](https://www.openmp.org/resources/tutorials-articles/)
+
+注意：omp不支持 `for (auto & : )` 这种循环语法，需要修改成 `for (int i = 0; i < ... ; i ++)`。
 
 
 ## 未完待续：Part2. 不可压缩性更好的SPH压力求解器
