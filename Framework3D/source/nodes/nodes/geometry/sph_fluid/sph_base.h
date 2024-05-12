@@ -1,8 +1,9 @@
-#pragma once 
+#pragma once
 #include <Eigen/Dense>
-#include "particle_system.h"
-#include <memory>
 #include <chrono>
+#include <memory>
+
+#include "particle_system.h"
 
 namespace USTC_CG::node_sph_fluid {
 #define TIC(name) auto start_##name = std::chrono::high_resolution_clock::now();
@@ -33,7 +34,7 @@ class SPHBase {
         return vel_;
     };
 
-    // SPH kernel function: h is the support radius, instead of time step size 
+    // SPH kernel function: h is the support radius, instead of time step size
     static double W(const Eigen::Vector3d& r, double h);
     static Eigen::Vector3d grad_W(const Eigen::Vector3d& r, double h);
     static double W_zero(double h);
@@ -68,9 +69,9 @@ class SPHBase {
         return viscosity_;
     }
     Vector3d& gravity()
-	{
-		return gravity_;
-	}
+    {
+        return gravity_;
+    }
 
     Vector3d gravity_ = Vector3d(0, 0, -9.8);
 
@@ -79,14 +80,15 @@ class SPHBase {
     bool enable_time_profiling = false;
 
     // for display: generate color for each particle based on its velocity
-    MatrixXd get_vel_color_jet(); 
-   
-  protected:
-    ParticleSystem ps_;
-    double dt_ = 0.005;  // You can adjust this parameter in the UI of node "SPH Fluid"
-    double viscosity_ = 0.03; // You can adjust this parameter in the UI of node "SPH Fluid"
+    MatrixXd get_vel_color_jet();
 
-    Vector3d box_min_, box_max_; // simulation box area
+   protected:
+    ParticleSystem ps_;
+    double dt_ = 0.005;        // You can adjust this parameter in the UI of node "SPH Fluid"
+    double viscosity_ = 0.03;  // You can adjust this parameter in the UI of node "SPH Fluid"
+    // means \mu / \rho
+
+    Vector3d box_min_, box_max_;  // simulation box area
 
     Eigen::MatrixXd init_X_;
     Eigen::MatrixXd X_;

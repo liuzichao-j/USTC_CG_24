@@ -1,4 +1,5 @@
 #include "particle_system.h"
+
 #include <iostream>
 
 namespace USTC_CG::node_sph_fluid {
@@ -16,6 +17,7 @@ ParticleSystem::ParticleSystem(const MatrixXd &X, const Vector3d &box_min, const
     const double diam = 2 * particle_radius_;
     particle_volume_ = 0.8 * pow(diam, 3);
     particle_mass_ = particle_volume_ * density0_;
+    // radius: 0.025, density: 1000, volume: 0.8*(0.05)^3, mass: 0.8*(0.05)^3*1000 = 0.1
 
     // Initialize the particles
     for (int i = 0; i < X.rows(); i++) {

@@ -24,14 +24,13 @@ vec2 cylindricalUV(vec3 dir) {
 }
 
 float reflectance(float cosine, float refraction_index) {
-        // Use Schlick's approximation for reflectance.
+	// Use Schlick's approximation for reflectance.
 	float r0 = (1 - refraction_index) / (1 + refraction_index);
 	r0 = r0 * r0;
 	return r0 + (1 - r0) * pow((1 - cosine), 5);
 }
 
 vec3 get_env_color(vec3 dir) {
-
 	vec2 env_texCoords = cylindricalUV(normalize(dir));
 	vec3 env_color = texture(env_texture, env_texCoords).xyz;
 	return env_color;
@@ -65,6 +64,11 @@ void main() {
 
 		//result = vec3(reflectance_);
 		Color = vec4(result, 1.0);
+	}
+	else {
+		vec3 color_val = texture(baseColor, uv).xyz;
+
+		Color = vec4(color_val, 1.0);
 	}
 	//Color = vec4(env_texCoords,1,1);
 }

@@ -1,8 +1,9 @@
-#pragma once 
-#include "utils.h"
+#pragma once
+#include <Eigen/Dense>
+
 #include "particle_system.h"
 #include "sph_base.h"
-#include <Eigen/Dense>
+#include "utils.h"
 
 namespace USTC_CG::node_sph_fluid {
 
@@ -32,13 +33,15 @@ class IISPH : public SPHBase {
     }
 
    protected:
-    int max_iter_ = 50;
-    double omega_ = 0.5;
+    int max_iter_ = 20;
+    double omega_ = 0.1;
 
     // (HW TODO) Feel free to modify this part to remove or add necessary member variables
     VectorXd predict_density_;
     VectorXd aii_;
-    VectorXd Api_;  
+    VectorXd Api_;
     VectorXd last_pressure_;
+
+    MatrixXd dii_;
 };
 }  // namespace USTC_CG::node_sph_fluid

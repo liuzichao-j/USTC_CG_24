@@ -54,8 +54,8 @@ static void node_sph_fluid_declare(NodeDeclarationBuilder& b)
 
     // --------- (HW Optional) if you implement IISPH, please uncomment the following lines ------------
 
-    //b.add_input<decl::Float>("omega").default_val(0.5).min(0.).max(1.);
-    //b.add_input<decl::Int>("max iter").default_val(20).min(0).max(1000);
+    b.add_input<decl::Float>("omega").default_val(0.5).min(0.).max(1.);
+    b.add_input<decl::Int>("max iter").default_val(20).min(0).max(1000);
 
     // -----------------------------------------------------------------------------------------------------------
 
@@ -142,8 +142,8 @@ static void node_sph_fluid_exec(ExeParams params)
             if (enable_IISPH) {
 			// --------- (HW Optional) if you implement IISPH please uncomment the following lines -----------		
             
-                //std::dynamic_pointer_cast<IISPH>(sph_base)->max_iter() = params.get_input<int>("max iter");
-                //std::dynamic_pointer_cast<IISPH>(sph_base)->omega() = params.get_input<float>("omega");
+                std::dynamic_pointer_cast<IISPH>(sph_base)->max_iter() = params.get_input<int>("max iter");
+                std::dynamic_pointer_cast<IISPH>(sph_base)->omega() = params.get_input<float>("omega");
 
             // --------------------------------------------------------------------------------------------------------
             }

@@ -60,6 +60,10 @@ void main() {
     // Robust tangent and bitangent evaluation
     if(length(tangent) < 1E-7) {
         vec3 bitangent = -edge1 * deltaUV2.x + edge2 * deltaUV1.x;
+        if(length(bitangent) < 1E-7) {
+            tangent = vec3(1, 0, 0);
+            bitangent = vec3(0, 1, 0);
+        }
         tangent = normalize(cross(bitangent, normal));
     }
 
