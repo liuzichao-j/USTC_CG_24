@@ -66,19 +66,20 @@ void JointTree::compute_world_transforms_for_each_joint()
 
 ## 3. 骨骼如何驱动蒙皮运动
 
-蒙皮上的每个顶点可能受到多个关节影响，其运动是多个关节transform线性组合作用后的结果（这种做法被称为[Linear Blend Skinning，LBS](http://graphics.cs.cmu.edu/courses/15-466-f17/notes/skinning.html)），每个顶点相关的关节index和响应的影响权重存储在`jointWeight`和`jointIndices`中。
+蒙皮上的每个顶点可能受到多个关节影响，其运动是多个关节transform线性组合作用后的结果（这种做法被称为[Linear Blend Skinning，LBS](http://graphics.cs.cmu.edu/courses/15-466-f17/notes/skinning.html)），每个顶点相关的关节index和响应的影响权重存储在`jointWeight`和`jointIndices`中，这两个数组的长度为 顶点数×对其有影响的关节数，影响每个顶点的关节数相同。
 
 为了让我们的mesh的顶点的空间位置从“相对于世界坐标系原点”转换为“相对于影响这个顶点的关节”，根据`bindTransform`的定义，我们可以通过对其求逆实现，称为逆绑定变换（Inverse Bind Transforms, IBTs）
 
 最后，mesh顶点位置的更新公式如下：
 
 $$
-\~{\mathbf{x}} = \sum_i w_i \mathbf{T}_i * \mathbf{B}_i^{-1} \~{\mathbf{x}}^0
+\~{\mathbf{x}} = \sum_i^n w_i \mathbf{T}_i * \mathbf{B}_i^{-1} \~{\mathbf{x}}^0
 $$
 
 其中 $\mathbf{T}_i$ 和 $\mathbf{B}_i$ 分别为第 $i$ 个关节的 `worldTransform`和`bindTransform`,  
+$n$ 为对顶点 $\mathbf{x}$ 产生影响的关节数 （需要通过`jointIndices`的长度除以顶点数得到）
 
-$\~{\mathbf{x}} = [\vec{\mathbf{x}}, 1] \in \mathbb{R}^{4 \times 1}$ , 可以使用`GfMatrix4f::TransformAffine` 函数实现。
+$\~{\mathbf{x}} = [\vec{\mathbf{x}}, 1] \in \mathbb{R}^{4 \times 1}$ , 可以使用`GfMatrix4f`的`TransformAffine` 函数实现。
 
 你需要实现[`animator.cpp`](../../../Framework3D/source/nodes/nodes/geometry/character_animation/animator.cpp)中的函数：
 
@@ -101,7 +102,7 @@ void Animator::update_mesh_vertices()
  <img src="../images/hw10-arm-demo.gif" style="zoom:40%" />
 </div>
 
-节点图如下：
+节点图如下，`Prim Path`为`/Model/Mesh`。
 <div  align="center">    
  <img src="../images/arm-node.png" style="zoom:80%" />
 </div>
@@ -112,7 +113,7 @@ void Animator::update_mesh_vertices()
  <img src="../images/hw10-demo.gif" style="zoom:100%" />
 </div>
 
-所需要连接的节点图如下：
+所需要连接的节点图如下, `Prim Path`为`/root/Armature/Ch03/Mesh_001`。
 
 <div  align="center">    
  <img src="../images/nodes-dance.png" style="zoom:100%" />
