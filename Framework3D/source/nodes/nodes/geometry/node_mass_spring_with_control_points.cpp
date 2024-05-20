@@ -32,6 +32,13 @@ static void node_mass_spring_declare(NodeDeclarationBuilder& b)
     b.add_input<decl::Float>("damping").default_val(0.995).min(0.0).max(1.0);
     b.add_input<decl::Float>("gravity").default_val(-9.8);
 
+        // --------- HW Optional: if you implement sphere collision, please uncomment the following lines ------------
+    b.add_input<decl::Float>("collision penalty_k").default_val(10000).min(100).max(100000); 
+    b.add_input<decl::Float>("collision scale factor").default_val(1.1).min(1.0).max(2.0); 
+    b.add_input<decl::Float>("sphere radius").default_val(0.4).min(0.0).max(5.0);; 
+    b.add_input<decl::Float3>("sphere center");
+    // -----------------------------------------------------------------------------------------------------------
+
     // Useful switches (0 or 1). You can add more if you like.
     b.add_input<decl::Int>("time integrator type").default_val(0).min(0).max(1); // 0 for implicit Euler, 1 for semi-implicit Euler
     b.add_input<decl::Int>("enable time profiling").default_val(0).min(0).max(1);
@@ -41,6 +48,9 @@ static void node_mass_spring_declare(NodeDeclarationBuilder& b)
 
     // Optional switches
     b.add_input<decl::Int>("enable Liu13").default_val(0).min(0).max(1);
+
+    // iteration times for Liu13
+    b.add_input<decl::Int>("Liu13 iteration times").default_val(100).min(1).max(1000);
 
     // Current time in node system
     b.add_input<decl::Float>("time_code");
@@ -83,7 +93,9 @@ static void node_mass_spring_exec(ExeParams params)
 
             bool enable_liu13 =  params.get_input<int>("enable Liu13") == 1 ? true : false;
             if (enable_liu13) { 
-				mass_spring = std::make_shared<FastMassSpring>(vertices, edges, k, h);
+                // HW Optional 
+                const int iter = params.get_input<int>("Liu13 iteration times");
+				mass_spring = std::make_shared<FastMassSpring>(vertices, edges, k, h, iter);
 			}
 			else
 				mass_spring = std::make_shared<MassSpring>(vertices, edges);
@@ -102,6 +114,15 @@ static void node_mass_spring_exec(ExeParams params)
             mass_spring->gravity = { 0, 0, params.get_input<float>("gravity")};
             mass_spring->damping = params.get_input<float>("damping");
 
+            // Optional parameters
+			// --------- HW Optional: if you implement sphere collision, please uncomment the following lines ------------
+            mass_spring->collision_penalty_k = params.get_input<float>("collision penalty_k");
+            mass_spring->collision_scale_factor = params.get_input<float>("collision scale factor");
+            auto c = params.get_input<pxr::GfVec3f>("sphere center"); 
+            mass_spring->sphere_center = {c[0], c[1], c[2]};
+            mass_spring->sphere_radius = params.get_input<float>("sphere radius");
+			// --------------------------------------------------------------------------------------------------------
+
             mass_spring->enable_sphere_collision = params.get_input<int>("enable sphere collision") == 1 ? true : false;
 			mass_spring->enable_damping = params.get_input<int>("enable damping") == 1 ? true : false;
 			mass_spring->time_integrator = params.get_input<int>("time integrator type") == 0 ? MassSpring::IMPLICIT_EULER : MassSpring::SEMI_IMPLICIT_EULER;
@@ -116,6 +137,8 @@ static void node_mass_spring_exec(ExeParams params)
     else  // otherwise, step forward the simulation
     {
         mass_spring->update_dirichlet_bc_vertices(usd_vertices_to_eigen(controller_mesh->vertices));
+        mass_spring->sphere_radius = params.get_input<float>("sphere radius");
+        mass_spring->update_sphere();
         mass_spring->step(); 
     }
 

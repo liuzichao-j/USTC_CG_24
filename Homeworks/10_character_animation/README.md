@@ -6,21 +6,21 @@
 
 
 > 作业步骤：
-> - 查看[文档](documents/README.md)，内含多个小教程，请先阅读 [documents/README.md](documents/README.md)，其中包含了所有文档的阅读引导
-> - 在[项目目录](../../Framework3D/)中编写作业代码
-> - 按照[作业规范](../README.md)提交作业
+> - 查看 [文档](documents/README.md)，内含多个小教程，请先阅读 [documents/README.md](documents/README.md)，其中包含了所有文档的阅读引导
+> - 在 [项目目录](../../Framework3D/) 中编写作业代码
+> - 按照 [作业规范](../README.md) 提交作业
 
 
 ## 作业递交
 
-- 递交内容：程序代码、实验报告及节点描述文件，见[提交文件格式](#提交文件格式)
-- 递交时间：北京时间2024年5月20日（周一）中午12点
+- 递交内容：程序代码、实验报告及节点描述文件，见 [提交文件格式](#提交文件格式)
+- 递交时间：北京时间 2024 年 5 月 20 日（周一）中午 12 点
 
 ## 要求
 
-- 实现骨骼的关节变换 & 蒙皮顶点更新，主要原理见[文档：角色动画简明教程](documents/README.md)
+- 实现骨骼的关节变换 & 蒙皮顶点更新，主要原理见 [文档：角色动画简明教程](documents/README.md)
 
-- （Optional）基于作业8弹簧质点实现衣服运动并考虑布料与人体的简单碰撞处理，说明见[文档Part2：角色动画+布料仿真](documents/README-part2.md)
+- （Optional）基于作业 8 弹簧质点实现衣服运动并考虑布料与人体的简单碰撞处理，说明见 [文档 Part2：角色动画 + 布料仿真](documents/README-part2.md)。
 
 
 
@@ -43,7 +43,7 @@
 
 ### 提交文件格式
 
-文件命名为 `ID_姓名_Homework*.rar/zip`，其中包含：`Framework3D/source/nodes/nodes/geometry/character_animation/`文件夹下的所有文件、`Framework3D/source/nodes/nodes/geometry/node_animate_mesh.cpp`, 以及其他可能的自行添加or修改的其他代码文件：
+文件命名为 `ID_姓名_Homework*.rar/zip`，其中包含：`Framework3D/source/nodes/nodes/geometry/character_animation/` 文件夹下的所有文件、`Framework3D/source/nodes/nodes/geometry/node_animate_mesh.cpp`, 以及其他可能的自行添加 or 修改的其他代码文件：
 ```
 ID_姓名_Homework*/
 ├── character_animation/                   

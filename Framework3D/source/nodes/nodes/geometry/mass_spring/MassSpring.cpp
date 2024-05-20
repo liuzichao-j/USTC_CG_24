@@ -99,6 +99,7 @@ void MassSpring::step()
                 vel.row(i) = -delta_X.row(i) / h;
             }
         }
+        collision_correction(X, vel, sphere_center.cast<double>(), sphere_radius);
 
         TOC(step)
     }
@@ -275,6 +276,30 @@ Eigen::MatrixXd MassSpring::getSphereCollisionForce(Eigen::Vector3d center, doub
     return force;
 }
 // ----------------------------------------------------------------------------------
+
+void MassSpring::collision_correction(Eigen::MatrixXd &X, Eigen::MatrixXd &vel, Eigen::Vector3d center, double radius)
+{
+    if(!enable_sphere_collision)
+    {
+    double collision_speed_factor = 0.1;
+    for (int i = 0; i < X.rows(); i++) {
+        Eigen::Vector3d delta_x;
+        delta_x[0] = X.row(i)[0] - center[0];
+        delta_x[1] = X.row(i)[1] - center[1];
+        delta_x[2] = X.row(i)[2] - center[2];
+        if (delta_x.norm() < radius) {
+            auto normal = delta_x.normalized();
+            X.row(i)[0] = center[0] + radius * normal[0];
+            X.row(i)[1] = center[1] + radius * normal[1];
+            X.row(i)[2] = center[2] + radius * normal[2];
+            double v_normal = vel.row(i)[0] * normal[0] + vel.row(i)[1] * normal[1] + vel.row(i)[2] * normal[2];
+            vel.row(i)[0] -= (collision_speed_factor + 1) * v_normal * normal[0];
+            vel.row(i)[1] -= (collision_speed_factor + 1) * v_normal * normal[1];
+            vel.row(i)[2] -= (collision_speed_factor + 1) * v_normal * normal[2];
+        }
+    }
+    }
+}
  
 bool MassSpring::set_dirichlet_bc_mask(const std::vector<bool>& mask)
 {
@@ -346,6 +371,37 @@ bool MassSpring::init_dirichlet_bc_vertices_control_pair(const MatrixXd &control
    }
 
    return true; 
+}
+
+void MassSpring::update_sphere()
+{
+    // Calculate sphere due to the fixed points.
+        // Just to find the farest point and get the median point as the sphere center.
+        double z_radius = sphere_radius;
+        double max_dist = 0;
+        double dis[3];
+        for (int i = 0; i < dirichlet_bc_mask.size(); i++) {
+            if (dirichlet_bc_mask[i]) {
+                for (int j = i + 1; j < dirichlet_bc_mask.size(); j++) {
+                    if(dirichlet_bc_mask[j]) {
+                        double dist = (X.row(i) - X.row(j)).norm();
+                        if (dist > max_dist) {
+                            max_dist = dist;
+                            sphere_center[0] = (X.row(i)[0] + X.row(j)[0]) / 2;
+                            sphere_center[1] = (X.row(i)[1] + X.row(j)[1]) / 2;
+                            sphere_center[2] = (X.row(i)[2] + X.row(j)[2]) / 2;
+                            dis[0] = (X.row(i)[0] - X.row(j)[0]) / 2;
+                            dis[1] = (X.row(i)[1] - X.row(j)[1]) / 2;
+                            dis[2] = (X.row(i)[2] - X.row(j)[2]) / 2;
+                            sphere_radius = dist / 2;
+                        }
+                    }
+                }
+            }
+        }
+        // Add it to a circle
+        sphere_radius = std::sqrt(dis[0] * dis[0] + dis[1] * dis[1] + z_radius * z_radius);
+        sphere_center[2] -= z_radius * 1.3;
 }
 
 }  // namespace USTC_CG::node_mass_spring

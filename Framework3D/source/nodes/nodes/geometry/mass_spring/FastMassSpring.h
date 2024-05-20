@@ -16,8 +16,20 @@ class FastMassSpring : public MassSpring {
         const float stiffness,
         const float h,
         const unsigned iter);
+    FastMassSpring(
+        const Eigen::MatrixXd& X,
+        const EdgeSet& E,
+        const float stiffness,
+        const float h);
     void step() override;
     unsigned max_iter = 100;  // (HW Optional) add UI for this parameter
+
+    bool set_dirichlet_bc_mask(const std::vector<bool>& mask) override;
+    bool update_dirichlet_bc_vertices(const MatrixXd &control_vertices) override; 
+    bool init_dirichlet_bc_vertices_control_pair(const MatrixXd &control_vertices,
+                                      const std::vector<bool>& control_mask) override;
+                                      
+    void init();
 
    protected:
     // Custom variables, like prefactorized A
